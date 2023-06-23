@@ -5,5 +5,5 @@ from aiharmonize.llm.base import BaseLLM
 
 class Architect(BaseLLM):
 
-    def run(self, element: CommunicationElement) -> CommunicationElement:
-        pass
+    def run(self, element: CommunicationElement):
+        print("架构师AI运行中...")

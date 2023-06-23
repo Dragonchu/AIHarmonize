@@ -11,6 +11,6 @@ class BaseLLM:
     def setup(self):
         """将LLM塑造为指定的角色"""
 
-    def run(self, element: CommunicationElement) -> CommunicationElement:
+    def run(self, element: CommunicationElement):
         """运行LLM"""
         raise NotImplementedError()
