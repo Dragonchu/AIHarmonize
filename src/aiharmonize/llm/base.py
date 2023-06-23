@@ -1,8 +1,8 @@
 """Base LLM class."""
+from aiharmonize.communication_element.base import CommunicationElement
 
 
 class BaseLLM:
-    """"Base LLM class."""
 
     def __init__(self, settings) -> None:
         self.settings = settings
@@ -11,6 +11,6 @@ class BaseLLM:
     def setup(self):
         """将LLM塑造为指定的角色"""
 
-    def run(self, *args, **kwargs):
+    def run(self, element: CommunicationElement) -> CommunicationElement:
         """运行LLM"""
         raise NotImplementedError()
