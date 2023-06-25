@@ -18,15 +18,15 @@ class Manage:
 
     def __init__(self):
         self.extractor_kls: Type[BaseExtractor] = get_extension(
-            'ai_harmonize.extractor',
+            'aiharmonize.extractor',
             settings.EXTRACTOR_NAME,
         )
         self.loader_kls: Type[BaseLoader] = get_extension(
-            'ai_harmonize.loader',
+            'aiharmonize.loader',
             settings.LOADER_NAME,
         )
         self.harmonizeai_kls: Type[BaseHarmonizeAI] = get_extension(
-            'ai_harmonize.harmonizeai',
+            'aiharmonize.harmonizeai',
             settings.TRANSFORMER_NAME,
         )
 
