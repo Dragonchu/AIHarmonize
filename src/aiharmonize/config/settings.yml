@@ -12,3 +12,6 @@ file_loader_path: /tmp/program_after_harmonize.txt
 extractor_name: langchain
 loader_name: file
 transformer_name: openai
+
+# openai的api key
+openai_api_key: 1234567890

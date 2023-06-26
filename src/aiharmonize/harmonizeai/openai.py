@@ -3,6 +3,9 @@
 """
 
 import logging
+import os
+
+from langchain import OpenAI
 
 from aiharmonize.harmonizeai.base import BaseHarmonizeAI
 
@@ -12,6 +15,16 @@ logger = logging.getLogger(__name__)
 # pylint: disable=too-few-public-methods
 class Gpt3HarmonizeAI(BaseHarmonizeAI):
     """Gpt3 base AI"""
+
+    def __init__(self, settings):
+        super().__init__(settings)
+        os.environ["OPENAI_API_KEY"] = self.settings.OPENAI_API_KEY
+        self.llm = OpenAI(temperature=0.7)
+
+    def setup(self):
+        """将LLM塑造为指定的角色"""
+        logger.info("Setup AI.")
+
     def transform(self, communication_element):
         """运行LLM"""
         logger.info("AI is running.")
