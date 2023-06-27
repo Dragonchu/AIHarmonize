@@ -5,7 +5,7 @@
 import logging
 import os
 
-from langchain import OpenAI
+from langchain import OpenAI, PromptTemplate, LLMChain
 
 from aiharmonize.harmonizeai.base import BaseHarmonizeAI
 
@@ -20,6 +20,11 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         super().__init__(settings)
         os.environ["OPENAI_API_KEY"] = self.settings.OPENAI_API_KEY
         self.llm = OpenAI(temperature=0.7)
+        self.prompt = PromptTemplate(
+            input_variables=["program"],
+            template="From now your are a programmer.Do you like {program}?\n"
+        )
+        self.chain = LLMChain(llm=self.llm, prompt=self.prompt)
 
     def setup(self):
         """将LLM塑造为指定的角色"""
@@ -28,4 +33,4 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
     def transform(self, communication_element):
         """运行LLM"""
         logger.info("AI is running.")
-        return communication_element
+        return self.chain.run("apple")

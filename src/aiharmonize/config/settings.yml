@@ -14,4 +14,4 @@ loader_name: file
 transformer_name: openai
 
 # openai的api key
-openai_api_key: 1234567890
+openai_api_key: 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

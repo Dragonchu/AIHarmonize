@@ -23,3 +23,11 @@ def test_strip_process(mocker, data, expect_value):
     processor = Gpt3HarmonizeAI(mocker.MagicMock())
     res = processor.transform(data)
     assert res == expect_value
+
+
+def test_llm(cached_calculator, mocker):
+    """测试大模型集成"""
+    settings = mocker.MagicMock()
+    settings.OPENAI_API_KEY = "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"
+    ai = Gpt3HarmonizeAI(settings)
+    print(ai.transform(cached_calculator))
