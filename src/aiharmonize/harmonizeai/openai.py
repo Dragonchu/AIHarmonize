@@ -5,7 +5,7 @@
 import logging
 import os
 
-from langchain import OpenAI, PromptTemplate, LLMChain
+from langchain import LLMChain, OpenAI, PromptTemplate
 
 from aiharmonize.harmonizeai.base import BaseHarmonizeAI
 

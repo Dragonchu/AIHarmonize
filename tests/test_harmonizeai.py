@@ -16,5 +16,5 @@ def test_llm(cached_calculator, mocker):
     """测试大模型集成"""
     settings = mocker.MagicMock()
     settings.OPENAI_API_KEY = "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"
-    ai = Gpt3HarmonizeAI(settings)
-    print(ai.transform(cached_calculator))
+    harmonize_ai = Gpt3HarmonizeAI(settings)
+    print(harmonize_ai.transform(cached_calculator))
