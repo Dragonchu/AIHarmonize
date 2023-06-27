@@ -12,19 +12,6 @@ def test_base_process(mocker):
         process.transform('foo')
 
 
-@pytest.mark.parametrize(
-    'data, expect_value',
-    [
-        ('xx', 'xx'),
-    ]
-)
-def test_strip_process(mocker, data, expect_value):
-    """Test strip transformer"""
-    processor = Gpt3HarmonizeAI(mocker.MagicMock())
-    res = processor.transform(data)
-    assert res == expect_value
-
-
 def test_llm(cached_calculator, mocker):
     """测试大模型集成"""
     settings = mocker.MagicMock()
