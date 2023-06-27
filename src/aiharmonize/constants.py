@@ -1,0 +1,3 @@
+"""Constants"""
+OPENAI_API_KEY = 'OPENAI_API_KEY'
+DEFAULT_ENCODING = 'utf-8'

@@ -5,6 +5,7 @@ from click import Context
 from aiharmonize import __version__
 from aiharmonize.config import settings
 from aiharmonize.log import init_log
+from aiharmonize.manage import Manage
 
 
 @click.group(invoke_without_command=True)
@@ -38,4 +39,5 @@ def main(ctx: Context, version: str, verbose: bool, debug: bool):
 def run():
     """Run command"""
     init_log()
-    click.echo('run......')
+    manage = Manage()
+    manage.run()
