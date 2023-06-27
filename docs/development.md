@@ -12,6 +12,8 @@
 - code
 - git commit
 - tox
+- poetry add xxx (增加相关依赖)
+- poetry shell （进入虚拟环境)
 
 ## Delivery
 
