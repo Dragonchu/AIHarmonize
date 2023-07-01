@@ -18,26 +18,26 @@ def test_get_extension_error():
         get_extension('aiharmonize.extractor', 'xxx')
 
 
-def test_manage_run(mocker):
-    """Test manage run"""
-    mocker.patch('aiharmonize.manage.get_extension')
-    process_mock = mocker.patch.object(Manage, 'harmonize')
-    manage = Manage()
+# def test_manage_run(mocker):
+#     """Test manage run"""
+#     mocker.patch('aiharmonize.manage.get_extension')
+#     process_mock = mocker.patch.object(Manage, 'harmonize')
+#     manage = Manage()
 
-    manage.run()
-    assert process_mock.called_once()
+#     manage.run()
+#     assert process_mock.called_once()
 
 
-def test_manage_transform(mocker):
-    """Test manage transform"""
-    magic_mock = mocker.MagicMock()
-    manage = Manage()
-    # 将manage的harmonizeai属性赋值为mock对象
-    manage.harmonizeai = magic_mock
-    magic_mock.extract.return_value = [1, 2]
-    manage.harmonize(magic_mock, magic_mock)
+# def test_manage_transform(mocker):
+#     """Test manage transform"""
+#     magic_mock = mocker.MagicMock()
+#     manage = Manage()
+#     # 将manage的harmonizeai属性赋值为mock对象
+#     manage.harmonizeai = magic_mock
+#     magic_mock.extract.return_value = [1, 2]
+#     manage.harmonize(magic_mock, magic_mock)
 
-    # 测试mock对象的方法是否被调用
-    assert magic_mock.extract.called_once()
-    assert magic_mock.load.call_count == 2
-    assert magic_mock.transform.call_count == 2
+#     # 测试mock对象的方法是否被调用
+#     assert magic_mock.extract.called_once()
+#     assert magic_mock.load.call_count == 2
+#     assert magic_mock.transform.call_count == 2

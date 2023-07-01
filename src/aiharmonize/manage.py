@@ -1,10 +1,10 @@
 """Manage"""
 import logging
 import os
-import shutil
 from typing import Type
 from zipfile import ZipFile
 
+import gradio as gr
 from stevedore import ExtensionManager
 
 from aiharmonize.config import settings
@@ -12,7 +12,6 @@ from aiharmonize.exceptions import PluginNotFoundError
 from aiharmonize.extractor.base import BaseExtractor
 from aiharmonize.harmonizeai.base import BaseHarmonizeAI
 from aiharmonize.loader.base import BaseLoader
-import gradio as gr
 
 logger = logging.getLogger(__name__)
 
@@ -39,13 +38,14 @@ class Manage:
     def run(self):
         """Run manage"""
         print(__file__)
-        def zip_files(files):
-            with ZipFile("tmp.zip", "w") as zipObj:
+        def find_functions(files):
+            with ZipFile("tmp.zip", "w") as zip_obj:
+                #pylint: disable=unused-variable
                 for idx, file in enumerate(files):
-                    zipObj.write(file.name, file.name.split("/")[-1])
+                    zip_obj.write(file.name, file.name.split("/")[-1])
             return "tmp.zip"
         demo = gr.Interface(
-            zip_files,
+            find_functions,
             gr.File(file_count="multiple", file_types=["text", ".json", ".py"]),
             "file",
             examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),

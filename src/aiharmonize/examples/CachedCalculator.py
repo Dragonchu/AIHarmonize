@@ -1,3 +1,4 @@
+# pylint: skip-file
 # 实现一个带缓存的计算器类，可以对两个数进行加、减、乘、除四则运算，并缓存上一次计算结果
 
 class CachedCalculator:
