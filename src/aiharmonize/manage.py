@@ -9,6 +9,7 @@ from aiharmonize.exceptions import PluginNotFoundError
 from aiharmonize.extractor.base import BaseExtractor
 from aiharmonize.harmonizeai.base import BaseHarmonizeAI
 from aiharmonize.loader.base import BaseLoader
+import gradio as gr
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,8 @@ class Manage:
 
     def run(self):
         """Run manage"""
+        demo = gr.Interface(fn=greet, inputs="text", outputs="text")
+        demo.launch()
         with self.extractor_kls(settings) as extractor:
             with self.loader_kls(settings) as loader:
                 self.harmonize(extractor, loader)
@@ -58,3 +61,6 @@ def get_extension(namespace: str, name: str):
             return ext.plugin
 
     raise PluginNotFoundError(namespace=namespace, name=name)
+
+def greet(name):
+    return "Hello " + name + "!"

@@ -17,6 +17,7 @@ click = "^8.1.3"
 langchain = "^0.0.202"
 stevedore = "^5.1.0"
 openai = "^0.27.8"
+gradio = "^3.35.2"
 
 [tool.poetry.plugins."aiharmonize.extractor"]
 langchain = "aiharmonize.extractor.langchain:LangchainExtractor"
