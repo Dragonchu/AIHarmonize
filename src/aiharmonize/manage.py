@@ -1,7 +1,10 @@
 """Manage"""
 import logging
+import os
 from typing import Type
+from zipfile import ZipFile
 
+import gradio as gr
 from stevedore import ExtensionManager
 
 from aiharmonize.config import settings
@@ -34,6 +37,22 @@ class Manage:
 
     def run(self):
         """Run manage"""
+        print(__file__)
+        def find_functions(files):
+            with ZipFile("tmp.zip", "w") as zip_obj:
+                #pylint: disable=unused-variable
+                for idx, file in enumerate(files):
+                    zip_obj.write(file.name, file.name.split("/")[-1])
+            return "tmp.zip"
+        demo = gr.Interface(
+            find_functions,
+            gr.File(file_count="multiple", file_types=["text", ".json", ".py"]),
+            "file",
+            examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),
+            os.path.join(os.path.dirname(__file__), "examples/FileOutputCalculator.py")]]],
+            cache_examples=True
+        )
+        demo.launch()
         with self.extractor_kls(settings) as extractor:
             with self.loader_kls(settings) as loader:
                 self.harmonize(extractor, loader)
@@ -56,5 +75,4 @@ def get_extension(namespace: str, name: str):
         if ext.name == name:
             logger.info('Load plugin: %s in namespace "%s"', ext.plugin, namespace)
             return ext.plugin
-
     raise PluginNotFoundError(namespace=namespace, name=name)
