@@ -14,6 +14,7 @@
 - tox
 - poetry add xxx (增加相关依赖)
 - poetry shell （进入虚拟环境)
+- poetry build && pip install --upgrade --no-deps --force-reinstall dist/aiharmonize-0.1.0-py3-none-any.whl && aiharmonize run
 
 ## Delivery
 

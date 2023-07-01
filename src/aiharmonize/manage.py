@@ -1,6 +1,9 @@
 """Manage"""
 import logging
+import os
+import shutil
 from typing import Type
+from zipfile import ZipFile
 
 from stevedore import ExtensionManager
 
@@ -35,7 +38,20 @@ class Manage:
 
     def run(self):
         """Run manage"""
-        demo = gr.Interface(fn=greet, inputs="text", outputs="text")
+        print(__file__)
+        def zip_files(files):
+            with ZipFile("tmp.zip", "w") as zipObj:
+                for idx, file in enumerate(files):
+                    zipObj.write(file.name, file.name.split("/")[-1])
+            return "tmp.zip"
+        demo = gr.Interface(
+            zip_files,
+            gr.File(file_count="multiple", file_types=["text", ".json", ".py"]),
+            "file",
+            examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),
+            os.path.join(os.path.dirname(__file__), "examples/FileOutputCalculator.py")]]],
+            cache_examples=True
+        )
         demo.launch()
         with self.extractor_kls(settings) as extractor:
             with self.loader_kls(settings) as loader:
@@ -59,8 +75,4 @@ def get_extension(namespace: str, name: str):
         if ext.name == name:
             logger.info('Load plugin: %s in namespace "%s"', ext.plugin, namespace)
             return ext.plugin
-
     raise PluginNotFoundError(namespace=namespace, name=name)
-
-def greet(name):
-    return "Hello " + name + "!"

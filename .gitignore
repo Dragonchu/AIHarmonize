@@ -179,3 +179,8 @@ venv.bak/
 ### Dynaconf config
 **/*.local.yml
 **/.secrets.yml
+
+### gradio
+flagged
+gradio*/
+*zip
