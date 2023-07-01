@@ -3,7 +3,7 @@ import pytest
 
 from aiharmonize.exceptions import PluginNotFoundError
 from aiharmonize.extractor.langchain import LangchainExtractor
-from aiharmonize.manage import Manage, get_extension
+from aiharmonize.manage import get_extension
 
 
 def test_get_extension():

@@ -2,7 +2,6 @@
 import pytest
 
 from aiharmonize.harmonizeai.base import BaseHarmonizeAI
-from aiharmonize.harmonizeai.openai import Gpt3HarmonizeAI
 
 
 def test_base_process(mocker):
