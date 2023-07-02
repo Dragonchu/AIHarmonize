@@ -2,7 +2,6 @@
 import logging
 import os
 from typing import Type
-from zipfile import ZipFile
 
 import gradio as gr
 from stevedore import ExtensionManager
@@ -37,26 +36,31 @@ class Manage:
 
     def run(self):
         """Run manage"""
-        print(__file__)
-        def find_functions(files):
-            with ZipFile("tmp.zip", "w") as zip_obj:
-                #pylint: disable=unused-variable
-                for idx, file in enumerate(files):
-                    zip_obj.write(file.name, file.name.split("/")[-1])
-            return "tmp.zip"
-        demo = gr.Interface(
-            find_functions,
-            gr.File(file_count="multiple", file_types=["text", ".json", ".py"]),
-            "file",
-            examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),
-            os.path.join(os.path.dirname(__file__), "examples/FileOutputCalculator.py")]]],
-            cache_examples=True
-        )
-        demo.launch()
-        with self.extractor_kls(settings) as extractor:
-            with self.loader_kls(settings) as loader:
-                self.harmonize(extractor, loader)
-        logger.info('Exit example_etl.')
+        demo = gr.Blocks()
+        with demo:
+            # 上传文件
+            file = gr.File(file_count="single", file_types=["text", ".json", ".py"])
+            # 显示功能点并交给用户修改
+            functions_text = gr.Textbox()
+            # 显示架构师AI的执行计划
+            plan_text = gr.Textbox()
+            
+            # 测试用例
+            gr.Examples(examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py")]]],inputs=file)
+            
+            # 显示功能点的按钮
+            find_func_btn = gr.Button("Find Functions")
+            # 执行计划的按钮
+            gen_plan_btn = gr.Button("Generate Plan")
+            
+            # 交互
+            find_func_btn.click(find_functions,inputs=file,outputs=functions_text)
+            gen_plan_btn.click(gen_plan,inputs=functions_text,outputs=plan_text)
+        demo.queue(concurrency_count=5, max_size=20).launch()
+        # with self.extractor_kls(settings) as extractor:
+        #     with self.loader_kls(settings) as loader:
+        #         self.harmonize(extractor, loader)
+        # logger.info('Exit example_etl.')
 
     def harmonize(self, extractor: BaseExtractor, loader: BaseLoader):
         """Transform data from extractor to loader."""
@@ -76,3 +80,15 @@ def get_extension(namespace: str, name: str):
             logger.info('Load plugin: %s in namespace "%s"', ext.plugin, namespace)
             return ext.plugin
     raise PluginNotFoundError(namespace=namespace, name=name)
+
+def gen_plan(user_decide):
+    """架构师AI生成执行计划"""
+    return f"Here we go: \n {user_decide}"
+
+def find_functions(tmp_file):
+    """获取功能点"""
+    res = ""
+    with open(tmp_file.name, encoding='utf8') as file:
+        for line in file.readlines():
+            res += line
+    return res
