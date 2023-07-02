@@ -71,7 +71,9 @@ class Manage:
             # data = self.harmonizeai.transform(i)
             details[file_path], embs[file_path] = data[0], data[1]
             loader.load_dict(data[0])
-        self.harmonizeai.calcu_similarity(embs)
+        sims_files, sims_names = self.harmonizeai.calcu_similarity(embs)
+        merge_funcs = self.harmonizeai.merge_method(sims_files, sims_names)
+        loader.load_dict(merge_funcs)
         logger.info('Data processed.')
 
 

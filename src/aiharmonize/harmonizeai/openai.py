@@ -6,7 +6,8 @@ import logging
 import os
 import numpy as np
 
-from langchain import LLMChain, OpenAI, PromptTemplate
+from langchain import LLMChain, ConversationChain, OpenAI, PromptTemplate
+from langchain.memory import ConversationKGMemory,ConversationBufferMemory
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.text_splitter import (
     RecursiveCharacterTextSplitter,
@@ -33,6 +34,8 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         )
         self.arch_chain = LLMChain(llm=self.llm, prompt=self.arch_prompt)
         self.embedding_model = OpenAIEmbeddings()
+        # self.memory = ConversationKGMemory(llm=OpenAI(temperature=1.0))
+        self.memory = ConversationBufferMemory(memory_key="memory", input_key="name")#,"file","code"])#, input_key="human_input")
 
     def setup(self):
         """将LLM塑造为指定的角色"""
@@ -71,7 +74,6 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         #     for i in python_docs:
         #         print(i)
             
-
         with open(file_path, 'r') as f:
             line = f.readline()
             while line is not None and line != '':
@@ -89,16 +91,26 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
                         continue
                 line = f.readline()
         
+        subfunc_detail_prompt = PromptTemplate(
+            input_variables=["name", "code", "memory"],
+            template="""From now your are a programmer. 
+                    {memory}
+                    The function code {name} is \"{code}\". 
+                    Please generally describe this function in detail.\n"""
+        )
+        # subfunc_detail_chain = LLMChain(llm=OpenAI(temperature=1.0), prompt=subfunc_detail_prompt)
+        # func_detail = subfunc_detail_chain.run({"name":k, "code":v})
+        subfunc_detail_chain = LLMChain(
+            llm=OpenAI(temperature=0.0), 
+            verbose=True, 
+            prompt=subfunc_detail_prompt, 
+            memory=self.memory)
+        
         for k, v in subfunc_points.items():
             print("*******************")
             print(k, v)
-            subfunc_detail_prompt = PromptTemplate(
-                input_variables=["name", "code"],
-                template="From now your are a programmer. The code in function {name} is \"{code}\". Please generally describe this function in detail.\n"
-            )
-            subfunc_detail_chain = LLMChain(llm=OpenAI(temperature=1.0), prompt=subfunc_detail_prompt)
-            func_detail = subfunc_detail_chain.run({"name":k, "code":v})
-            subfunc_details[k] = func_detail
+            func_detail = subfunc_detail_chain({"name":k+" in file "+file_path, "code":v}, return_only_outputs=True)['text']
+            subfunc_details[k] = func_detail.replace("AI:", "")
             print("function name: {0} \n function details: \n {1}".format(k, func_detail))
             
             embedding = self.embedding_model.embed_query(func_detail)
@@ -109,28 +121,71 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
 
         return subfunc_details, subfunc_embs
 
+    def merge_method(self, sims, sims_names):
+        """
+        Input:
+            sims: dict{file1_file2} , similarity
+            sims_names: dict{file1_file2}, "func1_func2"
+        """
+
+        subfunc_merge_prompt = PromptTemplate(
+            input_variables=["memory","name", "name1"],
+            template="""From now your are a programmer. 
+                    {memory}
+                    How to merge the function {name} and the function {name1} to one function\n"""
+        )
+        subfunc_merge_chain = LLMChain(
+            llm=OpenAI(temperature=1.0), 
+            verbose=True, 
+            prompt=subfunc_merge_prompt, 
+            memory=self.memory)
+        print(self.memory.buffer)
+        
+        merge_funcs = {}
+        for i, (file_names, func_names) in enumerate(sims_names.items()):
+            func_sims = sims[file_names]
+            # print(file_names,func_names,func_sims)
+            for j in range(len(func_sims)):
+                idx = np.argmax(func_sims[j])
+                max_sim = func_sims[j][idx]
+                if max_sim > 0.85:
+                    name1, name2 = func_names[j][idx].split("_")[0], func_names[j][idx].split("_")[1]
+                    file1, file2 = file_names.split("_")[0], file_names.split("_")[1]
+                    print("current two funcs: ", file1+" "+name1, file2+" "+name2)
+                    func_detail = subfunc_merge_chain({"name":name1+" in file "+file1, "name1":name2+" in file "+file2}, return_only_outputs=True)["text"]
+                    merge_funcs["merge two functions: " +file1+" "+name1 +" and "+ file2+" "+name2] = func_detail.replace("AI:", "")
+
+        return merge_funcs
+
+        
     def calcu_similarity(self, file_dict):
         """
         Input:  calculate function embedding similarities of C files
         """
         sims_files = {}
+        sims_names = {}
         for i, (ki,vi) in enumerate(file_dict.items()):
             for j, (kj,vj) in enumerate(file_dict.items()):
                 if i>j:
-                    sims, _ = self.calcu_similarity2(vi, vj)
+                    sims, names = self.calcu_similarity2(vi, vj)
                     sims_files[ki+"_"+kj] = sims
-
+                    sims_names[ki+"_"+kj] = names
         print(sims_files)
+        print(sims_names)
+        return sims_files, sims_names
 
     def calcu_similarity2(self, emb_dict1, emb_dict2):
         """
         Input: calculate N/M function embedding similarities
         """
-        sims = np.ones((len(emb_dict1.keys()), len(emb_dict2.keys())))
-        sim_func_names = [i+"_"+j for i in list(emb_dict1.keys()) for j in list(emb_dict2.keys())]
+        sims = np.zeros((len(emb_dict1.keys()), len(emb_dict2.keys())))
+        sim_func_names = [] #[[i+"_"+j for i in list(emb_dict1.keys())] for j in list(emb_dict2.keys())]
         for i, (ki,vi) in enumerate(emb_dict1.items()):
+            cur_name = []
             for j, (kj,vj) in enumerate(emb_dict2.items()):
+                cur_name.append(ki+"_"+kj)
                 if i>=j:
                     sims[i][j] = np.dot(vi, vj) / ( np.linalg.norm(vi) * np.linalg.norm(vj))
-        print(sims, sim_func_names)
+            sim_func_names.append(cur_name)
+        # print(sims, sim_func_names)
         return sims, sim_func_names
