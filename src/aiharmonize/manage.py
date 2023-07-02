@@ -44,15 +44,13 @@ class Manage:
             functions_text = gr.Textbox()
             # 显示架构师AI的执行计划
             plan_text = gr.Textbox()
-            
             # 测试用例
-            gr.Examples(examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py")]]],inputs=file)
-            
+            gr.Examples(examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py")]]]
+                        ,inputs=file)
             # 显示功能点的按钮
             find_func_btn = gr.Button("Find Functions")
             # 执行计划的按钮
             gen_plan_btn = gr.Button("Generate Plan")
-            
             # 交互
             find_func_btn.click(find_functions,inputs=file,outputs=functions_text)
             gen_plan_btn.click(gen_plan,inputs=functions_text,outputs=plan_text)
