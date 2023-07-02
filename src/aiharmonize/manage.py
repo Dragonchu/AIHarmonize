@@ -12,7 +12,6 @@ from aiharmonize.exceptions import PluginNotFoundError
 from aiharmonize.extractor.base import BaseExtractor
 from aiharmonize.harmonizeai.base import BaseHarmonizeAI
 from aiharmonize.loader.base import BaseLoader
-
 logger = logging.getLogger(__name__)
 
 
@@ -37,22 +36,23 @@ class Manage:
 
     def run(self):
         """Run manage"""
-        print(__file__)
-        def find_functions(files):
-            with ZipFile("tmp.zip", "w") as zip_obj:
-                #pylint: disable=unused-variable
-                for idx, file in enumerate(files):
-                    zip_obj.write(file.name, file.name.split("/")[-1])
-            return "tmp.zip"
-        demo = gr.Interface(
-            find_functions,
-            gr.File(file_count="multiple", file_types=["text", ".json", ".py"]),
-            "file",
-            examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),
-            os.path.join(os.path.dirname(__file__), "examples/FileOutputCalculator.py")]]],
-            cache_examples=True
-        )
-        demo.launch()
+        # print(__file__)
+        # def find_functions(files):
+        #     with ZipFile("tmp.zip", "w") as zip_obj:
+        #         #pylint: disable=unused-variable
+        #         for idx, file in enumerate(files):
+        #             zip_obj.write(file.name, file.name.split("/")[-1])
+        #     return "tmp.zip"
+        # demo = gr.Interface(
+        #     find_functions,
+        #     gr.File(file_count="multiple", file_types=["text", ".json", ".py"]),
+        #     "file",
+        #     examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),
+        #     os.path.join(os.path.dirname(__file__), "examples/FileOutputCalculator.py")]]],
+        #     cache_examples=True
+        # )
+        # demo.launch()
+        logger.info(settings.TRANSFORMER_NAME, settings.EXTRACTOR_NAME)
         with self.extractor_kls(settings) as extractor:
             with self.loader_kls(settings) as loader:
                 self.harmonize(extractor, loader)
@@ -61,10 +61,17 @@ class Manage:
     def harmonize(self, extractor: BaseExtractor, loader: BaseLoader):
         """Transform data from extractor to loader."""
         logger.info('Start transformer data ......')
-        for i in extractor.extract():
-            data = self.harmonizeai.transform(i)
-            loader.load(data)
 
+        details, embs = {}, {}
+        for i, (file_path, graph) in enumerate(extractor.extract().items()):
+            loader.load(file_path+"\n")
+            loader.load("graph:\n"+graph+"\nfunctions:\n")
+            print(file_path, graph)
+            data = self.harmonizeai.get_subfunc(file_path, graph)
+            # data = self.harmonizeai.transform(i)
+            details[file_path], embs[file_path] = data[0], data[1]
+            loader.load_dict(data[0])
+        self.harmonizeai.calcu_similarity(embs)
         logger.info('Data processed.')
 
 
