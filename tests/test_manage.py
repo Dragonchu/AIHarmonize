@@ -23,7 +23,6 @@ def test_get_extension_error():
 #     mocker.patch('aiharmonize.manage.get_extension')
 #     process_mock = mocker.patch.object(Manage, 'harmonize')
 #     manage = Manage()
-
 #     manage.run()
 #     assert process_mock.called_once()
 

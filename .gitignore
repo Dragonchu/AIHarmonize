@@ -21,6 +21,10 @@ $RECYCLE.BIN/
 *.msix
 *.msm
 *.msp
+*.zip
+tmp
+test.py
+*.lock
 
 # Windows shortcuts
 *.lnk

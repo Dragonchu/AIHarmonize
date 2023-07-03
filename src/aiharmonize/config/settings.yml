@@ -4,7 +4,8 @@ loglevel: warning
 logpath: /tmp/aiharmonize
 
 # 加载的需要被融合的程序路径
-file_extractor_path: /tmp/program_before_harmonize.txt
+file_extractor_path: /tmp
+# file_extractor_path: /tmp/program_before_harmonize.txt
 # 融合后程序的保存路径
 file_loader_path: /tmp/program_after_harmonize.txt
 
@@ -14,4 +15,4 @@ loader_name: file
 transformer_name: openai
 
 # openai的api key
-openai_api_key: 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
+openai_api_key: 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
