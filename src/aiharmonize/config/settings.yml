@@ -4,7 +4,7 @@ loglevel: warning
 logpath: /tmp/aiharmonize
 
 # 加载的需要被融合的程序路径
-file_extractor_path: tmp
+file_extractor_path: /tmp
 # file_extractor_path: /tmp/program_before_harmonize.txt
 # 融合后程序的保存路径
 file_loader_path: /tmp/program_after_harmonize.txt

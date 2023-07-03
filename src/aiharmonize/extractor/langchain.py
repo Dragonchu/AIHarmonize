@@ -24,7 +24,7 @@ class LangchainExtractor(BaseExtractor):
         logger.info('Extract data from %s', extractor_path)
 
         # zip_path = os.path.abspath("./{0}.zip".format(self.settings.FILE_EXTRACTOR_PATH))
-        path = os.path.abspath("./{0}".format(self.settings.FILE_EXTRACTOR_PATH))
+        path = self.settings.FILE_EXTRACTOR_PATH
         # cmd = "unzip {0} -d {1}".format(zip_path, path)
         # print(cmd)
         # os.system(cmd)
