@@ -4,15 +4,12 @@
 
 import logging
 import os
-import numpy as np
 
-from langchain import LLMChain, ConversationChain, OpenAI, PromptTemplate
-from langchain.memory import ConversationKGMemory,ConversationBufferMemory
+import numpy as np
+from langchain import ConversationChain, LLMChain, OpenAI, PromptTemplate
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.text_splitter import (
-    RecursiveCharacterTextSplitter,
-    Language,
-)
+from langchain.memory import ConversationBufferMemory, ConversationKGMemory
+from langchain.text_splitter import Language, RecursiveCharacterTextSplitter
 
 from aiharmonize.harmonizeai.base import BaseHarmonizeAI
 

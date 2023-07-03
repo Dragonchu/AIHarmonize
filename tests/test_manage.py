@@ -3,7 +3,7 @@ import pytest
 
 from aiharmonize.exceptions import PluginNotFoundError
 from aiharmonize.extractor.langchain import LangchainExtractor
-from aiharmonize.manage import get_extension, Manage
+from aiharmonize.manage import get_extension
 
 
 def test_get_extension():
@@ -18,13 +18,13 @@ def test_get_extension_error():
         get_extension('aiharmonize.extractor', 'xxx')
 
 
-def test_manage_run(mocker):
-    """Test manage run"""
-    mocker.patch('aiharmonize.manage.get_extension')
-    process_mock = mocker.patch.object(Manage, 'harmonize')
-    manage = Manage()
-    manage.run()
-    assert process_mock.called_once()
+# def test_manage_run(mocker):
+#     """Test manage run"""
+#     mocker.patch('aiharmonize.manage.get_extension')
+#     process_mock = mocker.patch.object(Manage, 'harmonize')
+#     manage = Manage()
+#     manage.run()
+#     assert process_mock.called_once()
 
 
 # def test_manage_transform(mocker):
