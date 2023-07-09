@@ -70,13 +70,20 @@ class Manage:
             # 执行计划的按钮
             gen_plan_btn = gr.Button("Generate Plan")
             # 交互
-            find_func_btn.click(self.find_functions,inputs=file,outputs=functions_text)
-            gen_plan_btn.click(gen_plan,inputs=functions_text,outputs=plan_text)
+            find_func_btn.click(self.gen_fp, inputs=file, outputs=functions_text)
+            gen_plan_btn.click(gen_plan, inputs=functions_text, outputs=plan_text)
         demo.queue(concurrency_count=5, max_size=20).launch()
         # with self.extractor_kls(settings) as extractor:
         #     with self.loader_kls(settings) as loader:
         #         self.harmonize(extractor, loader)
         # logger.info('Exit example_etl.')
+
+    def gen_fp(self, files):
+        """获取功能点"""
+        output = ""
+        for file in files:
+            output += self.harmonizeai.transform("fp_bot", open(file.name, 'r', encoding=DEFAULT_ENCODING)) + "\n"
+        return output
 
     def find_functions(self, tmp_files):
         """获取功能点"""
@@ -84,7 +91,7 @@ class Manage:
         for file in tmp_files:
             file_path = os.path.join(path,file.name.split("/")[-1])
             print(file_path)
-            with open(file_path, "w+",encoding=DEFAULT_ENCODING) as f_o:
+            with open(file_path, "w+", encoding=DEFAULT_ENCODING) as f_o:
                 f_o.write(file.read().decode("utf-8"))
         logger.info(settings.TRANSFORMER_NAME, settings.EXTRACTOR_NAME)
         with self.extractor_kls(settings) as extractor:
