@@ -6,7 +6,7 @@ extract data using lanchain.
 import logging
 import os
 
-import pyan
+# import pyan
 
 from aiharmonize.constants import DEFAULT_ENCODING
 from aiharmonize.extractor.base import BaseExtractor
@@ -38,10 +38,10 @@ class LangchainExtractor(BaseExtractor):
             file_path = os.path.join(path, file_name)
             file_dot_path = os.path.join(path, file_name.replace(".py", ".dot"))
             print(file_path)
-            graph = pyan.create_callgraph(filenames=file_path, format="dot", grouped_alt=True)
+            # graph = pyan.create_callgraph(filenames=file_path, format="dot", grouped_alt=True)
             # with open(file_dot_path, "w+") as f_o:
             #     f_o.write(a)
-            func_graphs[file_path] = graph
+            # func_graphs[file_path] = graph
 
         return func_graphs
             

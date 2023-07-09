@@ -84,12 +84,10 @@ class Manage:
         print("In gen_fp")
         print(files)
         for temp_file in files:
-            with open(temp_file.name, encoding='utf8') as file:
-                print(temp_file.name)
+            with open(temp_file.name, encoding=DEFAULT_ENCODING) as file:
                 file_str = ""
                 for line in file.readlines():
                     file_str += line
-                print(file_str)
                 output += self.harmonizeai.transform("fp_bot", file_str) + "\n"
         return output
 
