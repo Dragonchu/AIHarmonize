@@ -15,7 +15,7 @@ from aiharmonize.harmonizeai.base import BaseHarmonizeAI
 
 logger = logging.getLogger(__name__)
 
-prompt = """You are a program that provides function point descriptions based on the input code file.
+fp_prompt = """You are a program that provides function point descriptions based on the input code file.
 The term "input" refers to any information you receive, and if the input is not code, your response must be "Input is an unrecognized code file." 
 The term "output" refers to the function points in the code file, where only methods that can be accessed by external programs are considered as function points. Private methods and constructors are not considered as function points. 
 The output should be formatted as a series of function point descriptions separated by blank lines.
@@ -33,6 +33,8 @@ Describes the return value of the function.
 Displays the name of the function.
 """
 
+
+
 # pylint: disable=too-few-public-methods
 
 
@@ -42,13 +44,14 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
     def __init__(self, settings):
         super().__init__(settings)
         os.environ["OPENAI_API_KEY"] = self.settings.OPENAI_API_KEY
-        self.llm = OpenAI(temperature=0.7)
+        self.llm = OpenAI(temperature=1.0)
         self.arch_prompt = PromptTemplate(
             input_variables=["program"],
-            # template="From now your are a programmer. How to understand the subclasses in {program}?\n"
-            template=prompt + "This is input: {program}?\n"
+            template=fp_prompt
+         + "This is input: {program}?\n"
         )
-        self.arch_chain = LLMChain(llm=self.llm, prompt=self.arch_prompt)
+        self.arch_chain = LLMChain(llm=self.llm, fp_prompt
+    =self.arch_prompt)
         self.embedding_model = OpenAIEmbeddings()
         # self.memory = ConversationKGMemory(llm=OpenAI(temperature=1.0))
         # ,"file","code"])#, input_key="human_input")
@@ -69,7 +72,8 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         #     input_variables=["program"],
         #     template="From now your are a programmer. What are the innermost subclasses in {program}?\n"
         # )
-        # subfunc_chain = LLMChain(llm=OpenAI(temperature=1.0), prompt=subfunc_prompt)
+        # subfunc_chain = LLMChain(llm=OpenAI(temperature=1.0), fp_prompt
+        #=subfunc_prompt)
         # subfunc_name_str = subfunc_chain.run(graph)
         # subfunc_name_strs = subfunc_name_str.strip().split("\n")[1:]
         subfunc_name_strs = ['CachedCalculator__CachedCalculator____init__', 'CachedCalculator__CachedCalculator__add',
@@ -113,16 +117,19 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
 
         subfunc_detail_prompt = PromptTemplate(
             input_variables=["name", "code", "memory"],
-            template=prompt +"""
+            template=fp_prompt
+         +"""
                     {memory}
                     This file {name} is your input: \"{code}\""""
         )
-        # subfunc_detail_chain = LLMChain(llm=OpenAI(temperature=1.0), prompt=subfunc_detail_prompt)
+        # subfunc_detail_chain = LLMChain(llm=OpenAI(temperature=1.0), fp_prompt
+        #=subfunc_detail_prompt)
         # func_detail = subfunc_detail_chain.run({"name":k, "code":v})
         subfunc_detail_chain = LLMChain(
             llm=OpenAI(temperature=0.0),
             verbose=True,
-            prompt=subfunc_detail_prompt,
+            fp_prompt
+        =subfunc_detail_prompt,
             memory=self.memory)
 
         for k, v in subfunc_points.items():
@@ -159,7 +166,8 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         subfunc_merge_chain = LLMChain(
             llm=OpenAI(temperature=1.0),
             verbose=True,
-            prompt=subfunc_merge_prompt,
+            fp_prompt
+        =subfunc_merge_prompt,
             memory=self.memory)
         print(self.memory.buffer)
 
