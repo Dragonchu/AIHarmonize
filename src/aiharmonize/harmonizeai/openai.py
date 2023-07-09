@@ -21,7 +21,6 @@ get_function_point_template = """You are a program that provides function point 
 The term "input" refers to any information you receive, and if the input is not code, your response must be "Input is an unrecognized code file." 
 The term "output" refers to the function points in the code file, where only methods that can be accessed by external programs are considered as function points. Private methods and constructors are not considered as function points. 
 The output should be formatted as a series of function point descriptions separated by blank lines.
-The format of each  function point description is as follows:
 {format_instructions}
 """
 
@@ -33,12 +32,10 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
 
     def __init__(self, settings):
         super().__init__(settings)
-        # 设置OpenAI的API Key
         os.environ["OPENAI_API_KEY"] = self.settings.OPENAI_API_KEY
-
+        self.fp_bot_prompt = None
         self.fp_bot = None
         self.setup_fp_bot()
-
         self.llm = OpenAI(temperature=0.7)
         self.get_function_point_prompt_template = PromptTemplate.from_template(get_function_point_template)
         self.arch_chain = LLMChain(llm=self.llm, prompt=self.get_function_point_prompt_template)
@@ -64,13 +61,16 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         )
         file_input_template = "{file}"
         file_input_prompt = HumanMessagePromptTemplate.from_template(file_input_template)
-        fp_bot_prompt = ChatPromptTemplate.from_messages([fp_system_message_prompt, file_input_prompt])
-        self.fp_bot = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0, prompt=fp_bot_prompt)
+        self.fp_bot_prompt = ChatPromptTemplate.from_messages([fp_system_message_prompt, file_input_prompt])
+        self.fp_bot = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0, verbose=True)
 
     def transform(self, role, communication_element):
         """运行LLM"""
         if role == "fp_bot":
-            return self.fp_bot(communication_element)
+            _input = self.fp_bot_prompt.format_prompt(file=communication_element)
+            print(_input.to_string())
+            # return self.fp_bot(_input.to_string())
+            return "Test"
 
     def get_subfunc(self, file_path, graph):
         # subfunc_prompt = PromptTemplate(

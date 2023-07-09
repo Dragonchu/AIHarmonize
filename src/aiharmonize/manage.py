@@ -81,9 +81,15 @@ class Manage:
     def gen_fp(self, files):
         """获取功能点"""
         output = ""
-        for file in files:
-            with open(file.name, "w+", encoding=DEFAULT_ENCODING) as f_o:
-                file_str = f_o.read()
+        print("In gen_fp")
+        print(files)
+        for temp_file in files:
+            with open(temp_file.name, encoding='utf8') as file:
+                print(temp_file.name)
+                file_str = ""
+                for line in file.readlines():
+                    file_str += line
+                print(file_str)
                 output += self.harmonizeai.transform("fp_bot", file_str) + "\n"
         return output
 
