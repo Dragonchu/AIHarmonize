@@ -70,7 +70,7 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
     def transform(self, role, communication_element):
         """运行LLM"""
         if role == "fp_bot":
-            return self.fp_bot(communication_element.to_string())
+            return self.fp_bot(communication_element)
 
     def get_subfunc(self, file_path, graph):
         # subfunc_prompt = PromptTemplate(

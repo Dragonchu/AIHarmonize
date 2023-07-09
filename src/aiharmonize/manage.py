@@ -82,7 +82,9 @@ class Manage:
         """获取功能点"""
         output = ""
         for file in files:
-            output += self.harmonizeai.transform("fp_bot", open(file.name, 'r', encoding=DEFAULT_ENCODING)) + "\n"
+            with open(file.name, "w+", encoding=DEFAULT_ENCODING) as f_o:
+                file_str = f_o.read()
+                output += self.harmonizeai.transform("fp_bot", file_str) + "\n"
         return output
 
     def find_functions(self, tmp_files):
