@@ -6,31 +6,23 @@ import logging
 import os
 
 import numpy as np
-from langchain import ConversationChain, LLMChain, OpenAI, PromptTemplate
+from langchain import LLMChain, OpenAI, PromptTemplate
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.memory import ConversationBufferMemory, ConversationKGMemory
-from langchain.text_splitter import Language, RecursiveCharacterTextSplitter
+from langchain.memory import ConversationBufferMemory
+from langchain.output_parsers import PydanticOutputParser
+from langchain.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
 
 from aiharmonize.harmonizeai.base import BaseHarmonizeAI
+from aiharmonize.harmonizeai.communication_element import FunctionPoints
 
 logger = logging.getLogger(__name__)
 
-prompt = """You are a program that provides function point descriptions based on the input code file.
+get_function_point_template = """You are a program that provides function point descriptions based on the input code file.
 The term "input" refers to any information you receive, and if the input is not code, your response must be "Input is an unrecognized code file." 
 The term "output" refers to the function points in the code file, where only methods that can be accessed by external programs are considered as function points. Private methods and constructors are not considered as function points. 
 The output should be formatted as a series of function point descriptions separated by blank lines.
 The format of each  function point description is as follows:
-
-@description
-Briefly describes the functionality of each function.
-@param
-Describes the definition of first parameter
-@param
-Describes the definition of seconde parameter
-@return
-Describes the return value of the function.
-@function
-Displays the name of the function.
+{format_instructions}
 """
 
 # pylint: disable=too-few-public-methods
@@ -41,14 +33,15 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
 
     def __init__(self, settings):
         super().__init__(settings)
+        # 设置OpenAI的API Key
         os.environ["OPENAI_API_KEY"] = self.settings.OPENAI_API_KEY
+
+        self.fp_bot = None
+        self.setup_fp_bot()
+
         self.llm = OpenAI(temperature=0.7)
-        self.arch_prompt = PromptTemplate(
-            input_variables=["program"],
-            # template="From now your are a programmer. How to understand the subclasses in {program}?\n"
-            template=prompt + "This is input: {program}?\n"
-        )
-        self.arch_chain = LLMChain(llm=self.llm, prompt=self.arch_prompt)
+        self.get_function_point_prompt_template = PromptTemplate.from_template(get_function_point_template)
+        self.arch_chain = LLMChain(llm=self.llm, prompt=self.get_function_point_prompt_template)
         self.embedding_model = OpenAIEmbeddings()
         # self.memory = ConversationKGMemory(llm=OpenAI(temperature=1.0))
         # ,"file","code"])#, input_key="human_input")
@@ -59,10 +52,25 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         """将LLM塑造为指定的角色"""
         logger.info("Setup AI.")
 
-    def transform(self, communication_element):
+    def setup_fp_bot(self):
+        """设置获取功能点的AI"""
+        fp_parser = PydanticOutputParser(pydantic_object=FunctionPoints)
+        fp_system_message_prompt = SystemMessagePromptTemplate(
+            prompt=PromptTemplate(
+                template=get_function_point_template,
+                input_variables=[],
+                partial_variables={"format_instructions": fp_parser.get_format_instructions()},
+            )
+        )
+        file_input_template = "{file}"
+        file_input_prompt = HumanMessagePromptTemplate.from_template(file_input_template)
+        fp_bot_prompt = ChatPromptTemplate.from_messages([fp_system_message_prompt, file_input_prompt])
+        self.fp_bot = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0, prompt=fp_bot_prompt)
+
+    def transform(self, role, communication_element):
         """运行LLM"""
-        logger.info("AI is running.")
-        # return self.arch_chain.run(communication_element)
+        if role == "fp_bot":
+            return self.fp_bot(communication_element.to_string())
 
     def get_subfunc(self, file_path, graph):
         # subfunc_prompt = PromptTemplate(
@@ -113,7 +121,7 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
 
         subfunc_detail_prompt = PromptTemplate(
             input_variables=["name", "code", "memory"],
-            template=prompt +"""
+            template=get_function_point_template + """
                     {memory}
                     This file {name} is your input: \"{code}\""""
         )
