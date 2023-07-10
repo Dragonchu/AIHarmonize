@@ -64,7 +64,7 @@ class Manage:
             # 测试用例
             gr.Examples(examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),
                                     os.path.join(os.path.dirname(__file__), "examples/FileOutputCalculator.py")]]]
-                        ,inputs=file)
+                        , inputs=file)
             # 显示功能点的按钮
             find_func_btn = gr.Button("Find Functions")
             # 执行计划的按钮
@@ -72,7 +72,7 @@ class Manage:
             # 交互
             find_func_btn.click(self.gen_fp, inputs=file, outputs=functions_text)
             gen_plan_btn.click(gen_plan, inputs=functions_text, outputs=plan_text)
-        demo.queue(concurrency_count=5, max_size=20).launch()
+        demo.launch()
         # with self.extractor_kls(settings) as extractor:
         #     with self.loader_kls(settings) as loader:
         #         self.harmonize(extractor, loader)
@@ -80,16 +80,11 @@ class Manage:
 
     def gen_fp(self, files):
         """获取功能点"""
-        output = ""
-        print("In gen_fp")
-        print(files)
-        for temp_file in files:
-            with open(temp_file.name, encoding=DEFAULT_ENCODING) as file:
-                file_str = ""
-                for line in file.readlines():
-                    file_str += line
-                output += self.harmonizeai.transform("fp_bot", file_str) + "\n"
-        return output
+        res = ""
+        for idx, temp_file in enumerate(files):
+            with open(temp_file.name, encoding=DEFAULT_ENCODING) as fo:
+                res += self.harmonizeai.transform("fp_bot", fo.read()) + "\n"
+        return res
 
     def find_functions(self, tmp_files):
         """获取功能点"""
@@ -108,7 +103,7 @@ class Manage:
         content = res_file.readlines()
         res_file.close()
         return content
-    
+
     def harmonize(self, extractor: BaseExtractor, loader: BaseLoader):
         """Transform data from extractor to loader."""
         logger.info('Start transformer data ......')
