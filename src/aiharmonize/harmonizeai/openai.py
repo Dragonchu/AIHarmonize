@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 get_function_point_template = """You are a program that provides function point descriptions based on the input code file.
 The term "input" refers to any information you receive, and if the input is not code, your response must be "Input is an unrecognized code file." 
 The term "output" refers to the function points in the code file, where only methods that can be accessed by external programs are considered as function points. Private methods and constructors are not considered as function points. 
-The output should be formatted as a series of function point descriptions separated by blank lines.
 {format_instructions}
 """
 
@@ -62,14 +61,16 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         file_input_template = "{file}"
         file_input_prompt = HumanMessagePromptTemplate.from_template(file_input_template)
         self.fp_bot_prompt = ChatPromptTemplate.from_messages([fp_system_message_prompt, file_input_prompt])
-        self.fp_bot = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0, verbose=True)
+        self.fp_bot = OpenAI(model_name="gpt-3.5-turbo", max_tokens=-1, temperature=0.0, verbose=True)
 
     def transform(self, role, communication_element):
         """运行LLM"""
-        print("communication_element:", communication_element)
         if role == "fp_bot":
             _input = self.fp_bot_prompt.format_prompt(file=communication_element)
-            return self.fp_bot(_input.to_string())
+            print("_input:", _input.to_string())
+            output = self.fp_bot(_input.to_string())
+            print("output:", output)
+            return output
 
     def get_subfunc(self, file_path, graph):
         # subfunc_prompt = PromptTemplate(
