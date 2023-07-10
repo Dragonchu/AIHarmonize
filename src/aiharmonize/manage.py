@@ -64,7 +64,7 @@ class Manage:
             # 测试用例
             gr.Examples(examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),
                                     os.path.join(os.path.dirname(__file__), "examples/FileOutputCalculator.py")]]]
-                        , inputs=file)
+                        , inputs=file, cache_examples=True)
             # 显示功能点的按钮
             find_func_btn = gr.Button("Find Functions")
             # 执行计划的按钮
