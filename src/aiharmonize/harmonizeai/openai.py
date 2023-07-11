@@ -61,15 +61,13 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         file_input_template = "{file}"
         file_input_prompt = HumanMessagePromptTemplate.from_template(file_input_template)
         self.fp_bot_prompt = ChatPromptTemplate.from_messages([fp_system_message_prompt, file_input_prompt])
-        self.fp_bot = OpenAI(model_name="gpt-3.5-turbo", max_tokens=-1, temperature=0.0, verbose=True)
 
     def transform(self, role, communication_element):
         """运行LLM"""
         if role == "fp_bot":
             _input = self.fp_bot_prompt.format_prompt(file=communication_element)
-            print("_input:", _input.to_string())
-            output = self.fp_bot(_input.to_string())
-            print("output:", output)
+            fp_bot = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0, verbose=True)
+            output = fp_bot(_input.to_string())
             return output
 
     def get_subfunc(self, file_path, graph):

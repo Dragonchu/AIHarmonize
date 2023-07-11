@@ -36,23 +36,6 @@ class Manage:
         self.harmonizeai: BaseHarmonizeAI = self.harmonizeai_kls(settings)
 
     def run(self):
-        """Run manage"""
-        # print(__file__)
-        # def find_functions(files):
-        #     with ZipFile("tmp.zip", "w") as zip_obj:
-        #         #pylint: disable=unused-variable
-        #         for idx, file in enumerate(files):
-        #             zip_obj.write(file.name, file.name.split("/")[-1])
-        #     return "tmp.zip"
-        # demo = gr.Interface(
-        #     find_functions,
-        #     gr.File(file_count="multiple", file_types=["text", ".json", ".py"]),
-        #     "file",
-        #     examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),
-        #     os.path.join(os.path.dirname(__file__), "examples/FileOutputCalculator.py")]]],
-        #     cache_examples=True
-        # )
-        # demo.launch()
         demo = gr.Blocks()
         with demo:
             # 上传文件
@@ -72,18 +55,19 @@ class Manage:
             # 交互
             find_func_btn.click(self.gen_fp, inputs=file, outputs=functions_text)
             gen_plan_btn.click(gen_plan, inputs=functions_text, outputs=plan_text)
-        demo.launch()
-        # with self.extractor_kls(settings) as extractor:
-        #     with self.loader_kls(settings) as loader:
-        #         self.harmonize(extractor, loader)
-        # logger.info('Exit example_etl.')
+        demo.queue().launch(debug=True)
 
     def gen_fp(self, files):
         """获取功能点"""
+        print(files)
         res = ""
         for idx, temp_file in enumerate(files):
+            print(type(temp_file))
             with open(temp_file.name, encoding=DEFAULT_ENCODING) as fo:
-                res += self.harmonizeai.transform("fp_bot", fo.read()) + "\n"
+                output = self.harmonizeai.transform("fp_bot", fo.read())
+                # print(output)
+                res += output
+                print(res)
         return res
 
     def find_functions(self, tmp_files):
