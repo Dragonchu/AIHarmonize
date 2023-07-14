@@ -41,6 +41,6 @@ class CachedCalculator:
 
 # 使用示例
 calc = CachedCalculator()
-print(calc.add(2, 3))  # 输出 5，结果被缓存
+print(calc.add(2, 3))  # 输出 5，结果被缓存a
 print(calc.add(2, 3))  # 输出 5，直接从缓存中取得结果
 print(calc.multiply(2, 3))  # 输出 6，结果被缓存

@@ -36,84 +36,59 @@ class Manage:
         self.harmonizeai: BaseHarmonizeAI = self.harmonizeai_kls(settings)
 
     def run(self):
-        """Run manage"""
-        # print(__file__)
-        # def find_functions(files):
-        #     with ZipFile("tmp.zip", "w") as zip_obj:
-        #         #pylint: disable=unused-variable
-        #         for idx, file in enumerate(files):
-        #             zip_obj.write(file.name, file.name.split("/")[-1])
-        #     return "tmp.zip"
-        # demo = gr.Interface(
-        #     find_functions,
-        #     gr.File(file_count="multiple", file_types=["text", ".json", ".py"]),
-        #     "file",
-        #     examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),
-        #     os.path.join(os.path.dirname(__file__), "examples/FileOutputCalculator.py")]]],
-        #     cache_examples=True
-        # )
-        # demo.launch()
         demo = gr.Blocks()
         with demo:
             # 上传文件
             file = gr.File(file_count="multiple", file_types=["text", ".json", ".py"])
+            # 显示功能点的按钮
+            find_func_btn = gr.Button("Find Functions")
             # 显示功能点并交给用户修改
             functions_text = gr.Textbox()
+            # 执行计划的按钮
+            gen_plan_btn = gr.Button("Generate Plan")
             # 显示架构师AI的执行计划
             plan_text = gr.Textbox()
+            
             # 测试用例
             gr.Examples(examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),
                                     os.path.join(os.path.dirname(__file__), "examples/FileOutputCalculator.py")]]]
-                        ,inputs=file)
-            # 显示功能点的按钮
-            find_func_btn = gr.Button("Find Functions")
-            # 执行计划的按钮
-            gen_plan_btn = gr.Button("Generate Plan")
+                        , inputs=file)
             # 交互
-            find_func_btn.click(self.find_functions,inputs=file,outputs=functions_text)
-            gen_plan_btn.click(gen_plan,inputs=functions_text,outputs=plan_text)
-        demo.queue(concurrency_count=5, max_size=20).launch()
-        # with self.extractor_kls(settings) as extractor:
-        #     with self.loader_kls(settings) as loader:
-        #         self.harmonize(extractor, loader)
-        # logger.info('Exit example_etl.')
+            find_func_btn.click(self.gen_fp, inputs=file, outputs=functions_text)
+            gen_plan_btn.click(self.gen_plan, inputs=[file ,functions_text], outputs=plan_text)
+        demo.queue().launch(debug=True)
 
-    def find_functions(self, tmp_files):
+    def gen_fp(self, files):
         """获取功能点"""
-        path = settings.FILE_EXTRACTOR_PATH
-        for file in tmp_files:
-            file_path = os.path.join(path,file.name.split("/")[-1])
-            print(file_path)
-            with open(file_path, "w+",encoding=DEFAULT_ENCODING) as f_o:
-                f_o.write(file.read().decode("utf-8"))
-        logger.info(settings.TRANSFORMER_NAME, settings.EXTRACTOR_NAME)
-        with self.extractor_kls(settings) as extractor:
-            with self.loader_kls(settings) as loader:
-                self.harmonize(extractor, loader)
-        logger.info('Exit example_etl.')
-        res_file = open(settings.FILE_LOADER_PATH, 'r', encoding=DEFAULT_ENCODING)
-        content = res_file.readlines()
-        res_file.close()
-        return content
-    
-    def harmonize(self, extractor: BaseExtractor, loader: BaseLoader):
-        """Transform data from extractor to loader."""
-        logger.info('Start transformer data ......')
+        res = ""
+        for idx, temp_file in enumerate(files):
+            with open(temp_file.name, encoding=DEFAULT_ENCODING) as fo:
+                output = self.harmonizeai.transform("fp_bot", fo.read())
+                #output = "save money."
+                # print(output)
+                res += output
+                print(res)
+        return res
 
-        details, embs = {}, {}
-        for i, (file_path, graph) in enumerate(extractor.extract().items()):
-            loader.load(file_path+"\n")
-            loader.load("graph:\n"+graph+"\nfunctions:\n")
-            print(file_path, graph)
-            data = self.harmonizeai.get_subfunc(file_path, graph)
-            # data = self.harmonizeai.transform(i)
-            details[file_path], embs[file_path] = data[0], data[1]
-            loader.load_dict(data[0])
-        sims_files, sims_names = self.harmonizeai.calcu_similarity(embs)
-        merge_funcs = self.harmonizeai.merge_method(sims_files, sims_names)
-        loader.load_dict(merge_funcs)
-        logger.info('Data processed.')
+    def gen_plan(self, files, user_decide):
+        """架构师AI生成执行计划"""
+        return self.harmonizeai.transform("plan_bot", split_json_string(user_decide))
 
+def split_json_string(json_string):
+    # 查找两个JSON文件的分隔位置
+    separator = '}{'
+    index = json_string.find(separator)
+
+    # 拆分成两个JSON字符串
+    json1 = json_string[:index+1]
+    json2 = json_string[index+1:]
+
+    # 解析JSON字符串为JSON对象
+    json_list = []
+    json_list.append(json1)
+    json_list.append(json2)
+
+    return json_list
 
 def get_extension(namespace: str, name: str):
     """Get extension by name from namespace."""
@@ -123,7 +98,3 @@ def get_extension(namespace: str, name: str):
             logger.info('Load plugin: %s in namespace "%s"', ext.plugin, namespace)
             return ext.plugin
     raise PluginNotFoundError(namespace=namespace, name=name)
-
-def gen_plan(user_decide):
-    """架构师AI生成执行计划"""
-    return f"Here we go: \n {user_decide}"

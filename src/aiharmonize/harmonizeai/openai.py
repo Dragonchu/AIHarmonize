@@ -6,32 +6,37 @@ import logging
 import os
 
 import numpy as np
-from langchain import ConversationChain, LLMChain, OpenAI, PromptTemplate
+from langchain import LLMChain, OpenAI, PromptTemplate
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.memory import ConversationBufferMemory, ConversationKGMemory
-from langchain.text_splitter import Language, RecursiveCharacterTextSplitter
+from langchain.memory import ConversationBufferMemory
+from langchain.output_parsers import PydanticOutputParser
+from langchain.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
 
 from aiharmonize.harmonizeai.base import BaseHarmonizeAI
+from aiharmonize.harmonizeai.communication_element import FunctionPoint, FunctionPoints, MergePlan
 
 logger = logging.getLogger(__name__)
 
-prompt = """You are a program that provides function point descriptions based on the input code file.
+get_function_point_template = """You are a program that provides function point descriptions based on the input code file.
 The term "input" refers to any information you receive, and if the input is not code, your response must be "Input is an unrecognized code file." 
-The term "output" refers to the function points in the code file, where only methods that can be accessed by external programs are considered as function points. Private methods and constructors are not considered as function points. 
-The output should be formatted as a series of function point descriptions separated by blank lines.
-The format of each  function point description is as follows:
-
-@description
-Briefly describes the functionality of each function.
-@param
-Describes the definition of first parameter
-@param
-Describes the definition of seconde parameter
-@return
-Describes the return value of the function.
-@function
-Displays the name of the function.
+The term "output" refers to the function points in the code file, where only methods that can be accessed by external programs are considered as function points.
+Private methods and constructors are not considered as function points. 
+{format_instructions}
 """
+
+gen_project_merge_plan_template = """
+You are now an architect, and you only focus on the overall framework and core functionality of the program, without paying attention to the specific code details.
+You will be given two JSON files that represent two Python classes. 
+Your goal is to merge these two Python classes into one class. 
+However, as an architect, you don't need to make specific code changes. 
+You only need to give abstract instructions on which class's functionality should be kept, and which methods should be abstracted.
+Your task is to merge the classes in the most elegant way possible. 
+Since these classes have duplicate functionalities, the duplicated functionality should be abstracted as a common feature. 
+As for the slightly different parts between the two classes, you can freely decide whether to keep them or simply delete them.
+{format_instructions}
+"""
+
+
 
 # pylint: disable=too-few-public-methods
 
@@ -42,178 +47,51 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
     def __init__(self, settings):
         super().__init__(settings)
         os.environ["OPENAI_API_KEY"] = self.settings.OPENAI_API_KEY
-        self.llm = OpenAI(temperature=0.7)
-        self.arch_prompt = PromptTemplate(
-            input_variables=["program"],
-            # template="From now your are a programmer. How to understand the subclasses in {program}?\n"
-            template=prompt + "This is input: {program}?\n"
-        )
-        self.arch_chain = LLMChain(llm=self.llm, prompt=self.arch_prompt)
-        self.embedding_model = OpenAIEmbeddings()
-        # self.memory = ConversationKGMemory(llm=OpenAI(temperature=1.0))
-        # ,"file","code"])#, input_key="human_input")
-        self.memory = ConversationBufferMemory(
-            memory_key="memory", input_key="name")
+        self.fp_bot_prompt = None
+        self.fp_bot = None
+        self.setup_fp_bot()
+        self.setup_plan_bot()
 
     def setup(self):
         """将LLM塑造为指定的角色"""
         logger.info("Setup AI.")
 
-    def transform(self, communication_element):
+    def setup_fp_bot(self):
+        """设置获取功能点的AI"""
+        fp_parser = PydanticOutputParser(pydantic_object=FunctionPoints)
+        fp_system_message_prompt = SystemMessagePromptTemplate(
+            prompt=PromptTemplate(
+                template=get_function_point_template,
+                input_variables=[],
+                partial_variables={"format_instructions": fp_parser.get_format_instructions()},
+            )
+        )
+        file_input_template = "{file}"
+        file_input_prompt = HumanMessagePromptTemplate.from_template(file_input_template)
+        self.fp_bot_prompt = ChatPromptTemplate.from_messages([fp_system_message_prompt, file_input_prompt])
+        
+    def setup_plan_bot(self):
+        gen_plan_parser = PydanticOutputParser(pydantic_object=MergePlan)
+        gen_plan_system_message_prompt = SystemMessagePromptTemplate(
+            prompt=PromptTemplate(
+                template=gen_project_merge_plan_template,
+                input_variables=[],
+                partial_variables={"format_instructions": gen_plan_parser.get_format_instructions()},
+            )
+        )
+        gen_plan_input_template = "This is first json: {file1}. \n This is second json: {file2}."
+        gen_plan_input_prompt = HumanMessagePromptTemplate.from_template(gen_plan_input_template)
+        self.gen_plan_bot_prompt = ChatPromptTemplate.from_messages([gen_plan_system_message_prompt, gen_plan_input_prompt])
+
+    def transform(self, role, communication_element):
         """运行LLM"""
-        logger.info("AI is running.")
-        # return self.arch_chain.run(communication_element)
-
-    def get_subfunc(self, file_path, graph):
-        # subfunc_prompt = PromptTemplate(
-        #     input_variables=["program"],
-        #     template="From now your are a programmer. What are the innermost subclasses in {program}?\n"
-        # )
-        # subfunc_chain = LLMChain(llm=OpenAI(temperature=1.0), prompt=subfunc_prompt)
-        # subfunc_name_str = subfunc_chain.run(graph)
-        # subfunc_name_strs = subfunc_name_str.strip().split("\n")[1:]
-        subfunc_name_strs = ['CachedCalculator__CachedCalculator____init__', 'CachedCalculator__CachedCalculator__add',
-                             'CachedCalculator__CachedCalculator__divide', 'CachedCalculator__CachedCalculator__multiply', 'CachedCalculator__CachedCalculator__subtract']
-        # print(subfunc_name_strs)
-        subfunc_strs = [i.split("__")[-1]
-                        for i in subfunc_name_strs if '__init__' not in i]
-        substart = [0] * len(subfunc_strs)
-        subfunc_points, subfunc_details, subfunc_embs = {}, {}, {}
-        for i in subfunc_strs:
-            subfunc_points[i] = ""
-            subfunc_details[i] = ""
-            subfunc_embs[i] = ""
-
-        # TODO: How to set an adaptive chunck_size??
-        # with open(file_path, 'r') as f:
-        #     codes = f.read()
-        #     python_splitter = RecursiveCharacterTextSplitter.from_language(
-        #         language=Language.PYTHON, chunk_size=200, chunk_overlap=0
-        #     )
-        #     python_docs = python_splitter.create_documents([codes])
-        #     for i in python_docs:
-        #         print(i)
-
-        with open(file_path, 'r') as f:
-            line = f.readline()
-            while line is not None and line != '':
-                for i in range(len(subfunc_strs)):
-                    if " "+subfunc_strs[i]+"(" in line and substart[i] == 0:
-                        substart[i] += 1
-                        subfunc_points[subfunc_strs[i]] += line
-                    elif substart[i] > 0 and "def" not in line:
-                        substart[i] += 1
-                        subfunc_points[subfunc_strs[i]] += line
-                    elif substart[i] == 0:
-                        continue
-                    else:
-                        substart[i] = 0
-                        continue
-                line = f.readline()
-
-        subfunc_detail_prompt = PromptTemplate(
-            input_variables=["name", "code", "memory"],
-            template=prompt +"""
-                    {memory}
-                    This file {name} is your input: \"{code}\""""
-        )
-        # subfunc_detail_chain = LLMChain(llm=OpenAI(temperature=1.0), prompt=subfunc_detail_prompt)
-        # func_detail = subfunc_detail_chain.run({"name":k, "code":v})
-        subfunc_detail_chain = LLMChain(
-            llm=OpenAI(temperature=0.0),
-            verbose=True,
-            prompt=subfunc_detail_prompt,
-            memory=self.memory)
-
-        for k, v in subfunc_points.items():
-            print("*******************")
-            print(k, v)
-            func_detail = subfunc_detail_chain(
-                {"name": k+" in file "+file_path, "code": v}, return_only_outputs=True)['text']
-            subfunc_details[k] = func_detail.replace("AI:", "")
-            print("function name: {0} \n function details: \n {1}".format(
-                k, func_detail))
-
-            embedding = self.embedding_model.embed_query(func_detail)
-            subfunc_embs[k] = embedding
-            # print("function name: {0} \n function embeddings: \n {1}".format(k, embedding))
-            print("function name: {0} \n function embeddings: \n {1}".format(
-                k, len(embedding)))
-            print("*******************")
-
-        return subfunc_details, subfunc_embs
-
-    def merge_method(self, sims, sims_names):
-        """
-        Input:
-            sims: dict{file1_file2} , similarity
-            sims_names: dict{file1_file2}, "func1_func2"
-        """
-
-        subfunc_merge_prompt = PromptTemplate(
-            input_variables=["memory", "name", "name1"],
-            template="""From now your are a programmer. 
-                    {memory}
-                    How to merge the function {name} and the function {name1} to one function\n"""
-        )
-        subfunc_merge_chain = LLMChain(
-            llm=OpenAI(temperature=1.0),
-            verbose=True,
-            prompt=subfunc_merge_prompt,
-            memory=self.memory)
-        print(self.memory.buffer)
-
-        merge_funcs = {}
-        for i, (file_names, func_names) in enumerate(sims_names.items()):
-            func_sims = sims[file_names]
-            # print(file_names,func_names,func_sims)
-            for j in range(len(func_sims)):
-                idx = np.argmax(func_sims[j])
-                max_sim = func_sims[j][idx]
-                if max_sim > 0.85:
-                    name1, name2 = func_names[j][idx].split(
-                        "_")[0], func_names[j][idx].split("_")[1]
-                    file1, file2 = file_names.split(
-                        "_")[0], file_names.split("_")[1]
-                    print("current two funcs: ", file1 +
-                          " "+name1, file2+" "+name2)
-                    func_detail = subfunc_merge_chain(
-                        {"name": name1+" in file "+file1, "name1": name2+" in file "+file2}, return_only_outputs=True)["text"]
-                    merge_funcs["merge two functions: " + file1+" "+name1 +
-                                " and " + file2+" "+name2] = func_detail.replace("AI:", "")
-
-        return merge_funcs
-
-    def calcu_similarity(self, file_dict):
-        """
-        Input:  calculate function embedding similarities of C files
-        """
-        sims_files = {}
-        sims_names = {}
-        for i, (ki, vi) in enumerate(file_dict.items()):
-            for j, (kj, vj) in enumerate(file_dict.items()):
-                if i > j:
-                    sims, names = self.calcu_similarity2(vi, vj)
-                    sims_files[ki+"_"+kj] = sims
-                    sims_names[ki+"_"+kj] = names
-        print(sims_files)
-        print(sims_names)
-        return sims_files, sims_names
-
-    def calcu_similarity2(self, emb_dict1, emb_dict2):
-        """
-        Input: calculate N/M function embedding similarities
-        """
-        sims = np.zeros((len(emb_dict1.keys()), len(emb_dict2.keys())))
-        # [[i+"_"+j for i in list(emb_dict1.keys())] for j in list(emb_dict2.keys())]
-        sim_func_names = []
-        for i, (ki, vi) in enumerate(emb_dict1.items()):
-            cur_name = []
-            for j, (kj, vj) in enumerate(emb_dict2.items()):
-                cur_name.append(ki+"_"+kj)
-                if i >= j:
-                    sims[i][j] = np.dot(
-                        vi, vj) / (np.linalg.norm(vi) * np.linalg.norm(vj))
-            sim_func_names.append(cur_name)
-        # print(sims, sim_func_names)
-        return sims, sim_func_names
+        if role == "fp_bot":
+            _input = self.fp_bot_prompt.format_prompt(file=communication_element)
+            fp_bot = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0, verbose=True)
+            output = fp_bot(_input.to_string())
+            return output
+        elif role == "plan_bot":
+            _input = self.gen_plan_bot_prompt.format_prompt(file1=communication_element[0], file2=communication_element[1])
+            plan_bot = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0, verbose=True)
+            output = plan_bot(_input.to_string())
+            return output
