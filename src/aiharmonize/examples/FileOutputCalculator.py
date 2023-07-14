@@ -1,4 +1,3 @@
-# pylint: skip-file
 # 实现一个可以将结果输出到文件的计算器类，可以对两个数进行加、减、乘、除四则运算，并将结果输出到指定的文件中
 
 class FileOutputCalculator:

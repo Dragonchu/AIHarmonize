@@ -54,58 +54,24 @@ class Manage:
             gen_plan_btn = gr.Button("Generate Plan")
             # 交互
             find_func_btn.click(self.gen_fp, inputs=file, outputs=functions_text)
-            gen_plan_btn.click(gen_plan, inputs=functions_text, outputs=plan_text)
+            gen_plan_btn.click(self.gen_plan, inputs=[file ,functions_text], outputs=plan_text)
         demo.queue().launch(debug=True)
 
     def gen_fp(self, files):
         """获取功能点"""
-        print(files)
         res = ""
         for idx, temp_file in enumerate(files):
-            print(type(temp_file))
             with open(temp_file.name, encoding=DEFAULT_ENCODING) as fo:
                 output = self.harmonizeai.transform("fp_bot", fo.read())
+                #output = "save money."
                 # print(output)
                 res += output
                 print(res)
         return res
 
-    def find_functions(self, tmp_files):
-        """获取功能点"""
-        path = settings.FILE_EXTRACTOR_PATH
-        for file in tmp_files:
-            file_path = os.path.join(path,file.name.split("/")[-1])
-            print(file_path)
-            with open(file_path, "w+", encoding=DEFAULT_ENCODING) as f_o:
-                f_o.write(file.read().decode("utf-8"))
-        logger.info(settings.TRANSFORMER_NAME, settings.EXTRACTOR_NAME)
-        with self.extractor_kls(settings) as extractor:
-            with self.loader_kls(settings) as loader:
-                self.harmonize(extractor, loader)
-        logger.info('Exit example_etl.')
-        res_file = open(settings.FILE_LOADER_PATH, 'r', encoding=DEFAULT_ENCODING)
-        content = res_file.readlines()
-        res_file.close()
-        return content
-
-    def harmonize(self, extractor: BaseExtractor, loader: BaseLoader):
-        """Transform data from extractor to loader."""
-        logger.info('Start transformer data ......')
-
-        details, embs = {}, {}
-        for i, (file_path, graph) in enumerate(extractor.extract().items()):
-            loader.load(file_path+"\n")
-            loader.load("graph:\n"+graph+"\nfunctions:\n")
-            print(file_path, graph)
-            data = self.harmonizeai.get_subfunc(file_path, graph)
-            # data = self.harmonizeai.transform(i)
-            details[file_path], embs[file_path] = data[0], data[1]
-            loader.load_dict(data[0])
-        sims_files, sims_names = self.harmonizeai.calcu_similarity(embs)
-        merge_funcs = self.harmonizeai.merge_method(sims_files, sims_names)
-        loader.load_dict(merge_funcs)
-        logger.info('Data processed.')
-
+    def gen_plan(self, files, user_decide):
+        """架构师AI生成执行计划"""
+        return self.harmonizeai.transform("plan_bot", user_decide)
 
 def get_extension(namespace: str, name: str):
     """Get extension by name from namespace."""
@@ -115,7 +81,3 @@ def get_extension(namespace: str, name: str):
             logger.info('Load plugin: %s in namespace "%s"', ext.plugin, namespace)
             return ext.plugin
     raise PluginNotFoundError(namespace=namespace, name=name)
-
-def gen_plan(user_decide):
-    """架构师AI生成执行计划"""
-    return f"Here we go: \n {user_decide}"
