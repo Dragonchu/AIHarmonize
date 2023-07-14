@@ -36,6 +36,9 @@ class Manage:
         self.harmonizeai: BaseHarmonizeAI = self.harmonizeai_kls(settings)
 
     def run(self):
+        logger.warn("Welcome to HarmonizeAI!")
+        logger.debug("Start to extract data.")
+        print("Welcome to HarmonizeAI!")
         demo = gr.Blocks()
         with demo:
             # 上传文件

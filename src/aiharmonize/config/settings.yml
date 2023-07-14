@@ -1,6 +1,6 @@
 verbose: false
 debug: false
-loglevel: warning
+loglevel: debug
 logpath: /tmp/aiharmonize
 
 # 加载的需要被融合的程序路径
