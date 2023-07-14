@@ -51,14 +51,18 @@ class Manage:
             gen_plan_btn = gr.Button("Generate Plan")
             # 显示架构师AI的执行计划
             plan_text = gr.Textbox()
-            
+            # 生成合并后文件的按钮
+            gen_file_btn = gr.Button("Generate File")
+            # 显示合并后的文件
+            merged_file = gr.Textbox()
             # 测试用例
             gr.Examples(examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),
                                     os.path.join(os.path.dirname(__file__), "examples/FileOutputCalculator.py")]]]
                         , inputs=file)
             # 交互
             find_func_btn.click(self.gen_fp, inputs=file, outputs=functions_text)
-            gen_plan_btn.click(self.gen_plan, inputs=[file ,functions_text], outputs=plan_text)
+            gen_plan_btn.click(self.gen_plan, inputs=[file, functions_text], outputs=plan_text)
+            gen_file_btn.click(self.gen_file, inputs=[file, plan_text], outputs=merged_file)
         demo.queue().launch(debug=True)
 
     def gen_fp(self, files):
@@ -67,7 +71,7 @@ class Manage:
         for idx, temp_file in enumerate(files):
             with open(temp_file.name, encoding=DEFAULT_ENCODING) as fo:
                 output = self.harmonizeai.transform("fp_bot", fo.read())
-                #output = "save money."
+                # output = "save money."
                 # print(output)
                 res += output
                 print(res)
@@ -77,14 +81,23 @@ class Manage:
         """架构师AI生成执行计划"""
         return self.harmonizeai.transform("plan_bot", split_json_string(user_decide))
 
+    def gen_file(self, files, plan):
+        """架构师AI生成合并后的文件"""
+        communication_element = {"plan": plan}
+        for idx, temp_file in enumerate(files):
+            with open(temp_file.name, encoding=DEFAULT_ENCODING) as fo:
+                communication_element["file" + str(idx)] = fo.read()
+        return self.harmonizeai.transform("merge_bot", communication_element)
+
+
 def split_json_string(json_string):
     # 查找两个JSON文件的分隔位置
     separator = '}{'
     index = json_string.find(separator)
 
     # 拆分成两个JSON字符串
-    json1 = json_string[:index+1]
-    json2 = json_string[index+1:]
+    json1 = json_string[:index + 1]
+    json2 = json_string[index + 1:]
 
     # 解析JSON字符串为JSON对象
     json_list = []
@@ -92,6 +105,7 @@ def split_json_string(json_string):
     json_list.append(json2)
 
     return json_list
+
 
 def get_extension(namespace: str, name: str):
     """Get extension by name from namespace."""

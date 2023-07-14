@@ -5,15 +5,12 @@
 import logging
 import os
 
-import numpy as np
-from langchain import LLMChain, OpenAI, PromptTemplate
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.memory import ConversationBufferMemory
+from langchain import OpenAI, PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
 
 from aiharmonize.harmonizeai.base import BaseHarmonizeAI
-from aiharmonize.harmonizeai.communication_element import FunctionPoint, FunctionPoints, MergePlan
+from aiharmonize.harmonizeai.communication_element import FunctionPoints, MergePlan
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +33,13 @@ As for the slightly different parts between the two classes, you can freely deci
 {format_instructions}
 """
 
-
+merge_class_template = """
+You are a program that merges two python classes into one, your output should only contain the merged python class, 
+no other output is required. Your merge needs to comply with certain requirements, this is your merge requirement: {requirements}, 
+these are the two classes you need to merge.
+The first class: {class1}\n
+The second class: {class2}\n
+"""
 
 # pylint: disable=too-few-public-methods
 
@@ -46,6 +49,8 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
 
     def __init__(self, settings):
         super().__init__(settings)
+        self.merge_bot_prompt = None
+        self.gen_plan_bot_prompt = None
         os.environ["OPENAI_API_KEY"] = self.settings.OPENAI_API_KEY
         self.fp_bot_prompt = None
         self.fp_bot = None
@@ -83,6 +88,9 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         gen_plan_input_prompt = HumanMessagePromptTemplate.from_template(gen_plan_input_template)
         self.gen_plan_bot_prompt = ChatPromptTemplate.from_messages([gen_plan_system_message_prompt, gen_plan_input_prompt])
 
+    def setup_merge_bot(self):
+        self.merge_bot_prompt = PromptTemplate.from_template(merge_class_template)
+
     def transform(self, role, communication_element):
         """运行LLM"""
         if role == "fp_bot":
@@ -94,4 +102,11 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
             _input = self.gen_plan_bot_prompt.format_prompt(file1=communication_element[0], file2=communication_element[1])
             plan_bot = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0, verbose=True)
             output = plan_bot(_input.to_string())
+            return output
+        elif role == "merge_bot":
+            _input = self.merge_bot_prompt.format_prompt(requirements=communication_element["plan"],
+                                                         class1=communication_element["file0"],
+                                                         class2=communication_element["file1"])
+            merge_bot = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0, verbose=True)
+            output = merge_bot(_input.to_string())
             return output
