@@ -56,6 +56,7 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         self.fp_bot = None
         self.setup_fp_bot()
         self.setup_plan_bot()
+        self.setup_merge_bot()
 
     def setup(self):
         """将LLM塑造为指定的角色"""
