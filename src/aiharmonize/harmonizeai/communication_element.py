@@ -13,3 +13,7 @@ class FunctionPoint(BaseModel):
 class FunctionPoints(BaseModel):
     """Function Points Model"""
     function_points: list[FunctionPoint] = Field(description="List of function points.")
+    
+class MergePlan(BaseModel):
+    """Merge Plan Model"""
+    merge_plan: list[str] = Field(description="The steps of merge two class into one class.")

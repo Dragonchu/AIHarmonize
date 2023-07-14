@@ -13,7 +13,7 @@ from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
 
 from aiharmonize.harmonizeai.base import BaseHarmonizeAI
-from aiharmonize.harmonizeai.communication_element import FunctionPoint, FunctionPoints
+from aiharmonize.harmonizeai.communication_element import FunctionPoint, FunctionPoints, MergePlan
 
 logger = logging.getLogger(__name__)
 
@@ -25,14 +25,18 @@ Private methods and constructors are not considered as function points.
 """
 
 gen_project_merge_plan_template = """
-You are a program responsible for merging function points. Your input will be fuction points from two files. 
-The fuction points definitions for each file are JSON files, in which the "weight" attribute indicates the importance of the entire functionality point. 
-The range for the "weight" value is from 0 to 1, with higher values indicating that the functionality point should be retained as much as possible, and lower values suggesting that the fuction points can be considered for merging with other points or even discarded. 
-A "weight" value of 1 means that the functionality point must exist independently, while a "weight" value of 0 means that the functionality point should be discarded.
-Your output should directly provide the merged result of the two functionalities, in a format consistent with the input fuction points JSON. 
-You have the flexibility to decide the class name of the output based on the input.
+You are now an architect, and you only focus on the overall framework and core functionality of the program, without paying attention to the specific code details.
+You will be given two JSON files that represent two Python classes. 
+Your goal is to merge these two Python classes into one class. 
+However, as an architect, you don't need to make specific code changes. 
+You only need to give abstract instructions on which class's functionality should be kept, and which methods should be abstracted.
+Your task is to merge the classes in the most elegant way possible. 
+Since these classes have duplicate functionalities, the duplicated functionality should be abstracted as a common feature. 
+As for the slightly different parts between the two classes, you can freely decide whether to keep them or simply delete them.
 {format_instructions}
 """
+
+
 
 # pylint: disable=too-few-public-methods
 
@@ -67,7 +71,7 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         self.fp_bot_prompt = ChatPromptTemplate.from_messages([fp_system_message_prompt, file_input_prompt])
         
     def setup_plan_bot(self):
-        gen_plan_parser = PydanticOutputParser(pydantic_object=FunctionPoint)
+        gen_plan_parser = PydanticOutputParser(pydantic_object=MergePlan)
         gen_plan_system_message_prompt = SystemMessagePromptTemplate(
             prompt=PromptTemplate(
                 template=gen_project_merge_plan_template,
@@ -75,7 +79,7 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
                 partial_variables={"format_instructions": gen_plan_parser.get_format_instructions()},
             )
         )
-        gen_plan_input_template = "Here are the function points of the two files:{file}\nPlease merge them into one file."
+        gen_plan_input_template = "This is first json: {file1}. \n This is second json: {file2}."
         gen_plan_input_prompt = HumanMessagePromptTemplate.from_template(gen_plan_input_template)
         self.gen_plan_bot_prompt = ChatPromptTemplate.from_messages([gen_plan_system_message_prompt, gen_plan_input_prompt])
 
@@ -87,7 +91,7 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
             output = fp_bot(_input.to_string())
             return output
         elif role == "plan_bot":
-            _input = self.gen_plan_bot_prompt.format_prompt(file=communication_element)
+            _input = self.gen_plan_bot_prompt.format_prompt(file1=communication_element[0], file2=communication_element[1])
             plan_bot = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0, verbose=True)
             output = plan_bot(_input.to_string())
             return output

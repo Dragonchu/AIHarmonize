@@ -40,18 +40,19 @@ class Manage:
         with demo:
             # 上传文件
             file = gr.File(file_count="multiple", file_types=["text", ".json", ".py"])
+            # 显示功能点的按钮
+            find_func_btn = gr.Button("Find Functions")
             # 显示功能点并交给用户修改
             functions_text = gr.Textbox()
+            # 执行计划的按钮
+            gen_plan_btn = gr.Button("Generate Plan")
             # 显示架构师AI的执行计划
             plan_text = gr.Textbox()
+            
             # 测试用例
             gr.Examples(examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),
                                     os.path.join(os.path.dirname(__file__), "examples/FileOutputCalculator.py")]]]
                         , inputs=file)
-            # 显示功能点的按钮
-            find_func_btn = gr.Button("Find Functions")
-            # 执行计划的按钮
-            gen_plan_btn = gr.Button("Generate Plan")
             # 交互
             find_func_btn.click(self.gen_fp, inputs=file, outputs=functions_text)
             gen_plan_btn.click(self.gen_plan, inputs=[file ,functions_text], outputs=plan_text)
@@ -71,7 +72,23 @@ class Manage:
 
     def gen_plan(self, files, user_decide):
         """架构师AI生成执行计划"""
-        return self.harmonizeai.transform("plan_bot", user_decide)
+        return self.harmonizeai.transform("plan_bot", split_json_string(user_decide))
+
+def split_json_string(json_string):
+    # 查找两个JSON文件的分隔位置
+    separator = '}{'
+    index = json_string.find(separator)
+
+    # 拆分成两个JSON字符串
+    json1 = json_string[:index+1]
+    json2 = json_string[index+1:]
+
+    # 解析JSON字符串为JSON对象
+    json_list = []
+    json_list.append(json1)
+    json_list.append(json2)
+
+    return json_list
 
 def get_extension(namespace: str, name: str):
     """Get extension by name from namespace."""
