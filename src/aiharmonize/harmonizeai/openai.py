@@ -190,7 +190,7 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
                 if i > j:
                     sims, _ = self.calcu_similarity2(vi, vj)
                     sims_files[ki + "_" + kj] = sims
-
+        return sims_files
         logger.debug(sims_files)
 
     def calcu_similarity2(self, emb_dict1, emb_dict2):
@@ -203,5 +203,6 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
             for j, (kj, vj) in enumerate(emb_dict2.items()):
                 if i >= j:
                     sims[i][j] = np.dot(vi, vj) / (np.linalg.norm(vi) * np.linalg.norm(vj))
-        logger.debug(sims, sim_func_names)
+        logger.debug("sims: "+sims)
+        logger.debug("sim_func_names: "+sim_func_names)
         return sims, sim_func_names
