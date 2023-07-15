@@ -13,3 +13,9 @@ class BaseHarmonizeAI:
     def transform(self, role, communication_element):
         """运行LLM"""
         raise NotImplementedError()
+
+    def get_subfunc(self, fo):
+        pass
+
+    def calcu_similarity(self, embs):
+        pass

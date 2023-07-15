@@ -75,6 +75,7 @@ class Manage:
 
             # 交互
             find_func_btn.click(self.gen_fp, inputs=file, outputs=functions_text)
+            calcu_sim_btn.click(self.calcu_sim, inputs=[file], outputs=sim_text)
             gen_plan_btn.click(self.gen_plan, inputs=[file, functions_text], outputs=plan_text)
             gen_file_btn.click(self.gen_file, inputs=[file, plan_text], outputs=merged_file)
         demo.queue().launch(debug=True)
@@ -103,6 +104,20 @@ class Manage:
                 communication_element["file" + str(idx)] = fo.read()
         return self.harmonizeai.transform("merge_bot", communication_element)
 
+    def calcu_sim(self, files):
+        """计算相似度"""
+        func_graphs = {}
+        details, embs = {}, {}
+        res = ""
+        for file in files:
+            with open(file.name, encoding=DEFAULT_ENCODING) as fo:
+                graph = pyan.create_callgraph(filenames=file.name, format="dot", grouped_alt=True)
+                func_graphs[file.name] = graph
+                data = self.harmonizeai.get_subfunc(fo)
+                details[file.name], embs[file.name] = data[0], data[1]
+                res += self.harmonizeai.calcu_similarity(embs)
+        return res
+    def get_subfunc(self,filename, graph):
 
 def split_json_string(json_string):
     # 查找两个JSON文件的分隔位置

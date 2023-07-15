@@ -5,7 +5,8 @@
 import logging
 import os
 
-from langchain import OpenAI, PromptTemplate
+import numpy as np
+from langchain import OpenAI, PromptTemplate, LLMChain
 from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
 
@@ -111,3 +112,87 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
             merge_bot = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0, verbose=True)
             output = merge_bot(_input.to_string())
             return output
+
+    def get_subfunc(self, file):
+        subfunc_name_strs = ['CachedCalculator__CachedCalculator____init__', 'CachedCalculator__CachedCalculator__add',
+                             'CachedCalculator__CachedCalculator__divide',
+                             'CachedCalculator__CachedCalculator__multiply',
+                             'CachedCalculator__CachedCalculator__subtract']
+        subfunc_strs = [i.split("__")[-1] for i in subfunc_name_strs if '__init__' not in i]
+        substart = [0] * len(subfunc_strs)
+        subfunc_points, subfunc_details, subfunc_embs = {}, {}, {}
+        for i in subfunc_strs:
+            subfunc_points[i] = ""
+            subfunc_details[i] = ""
+            subfunc_embs[i] = ""
+
+        ## TODO: How to set an adaptive chunck_size??
+        # with open(file_path, 'r') as f:
+        #     codes = f.read()
+        #     python_splitter = RecursiveCharacterTextSplitter.from_language(
+        #         language=Language.PYTHON, chunk_size=200, chunk_overlap=0
+        #     )
+        #     python_docs = python_splitter.create_documents([codes])
+        #     for i in python_docs:
+        #         print(i)
+
+        line = file.readline()
+        while line is not None and line != '':
+            for i in range(len(subfunc_strs)):
+                if " " + subfunc_strs[i] + "(" in line and substart[i] == 0:
+                    substart[i] += 1
+                    subfunc_points[subfunc_strs[i]] += line
+                elif substart[i] > 0 and "def" not in line:
+                    substart[i] += 1
+                    subfunc_points[subfunc_strs[i]] += line
+                elif substart[i] == 0:
+                    continue
+                else:
+                    substart[i] = 0
+                    continue
+            line = file.readline()
+
+        for k, v in subfunc_points.items():
+            logger.debug("*******************")
+            logger.debug(k, v)
+            subfunc_detail_prompt = PromptTemplate(
+                input_variables=["name", "code"],
+                template="From now your are a programmer. The code in function {name} is \"{code}\". Please generally describe this function in detail.\n"
+            )
+            subfunc_detail_chain = LLMChain(llm=OpenAI(temperature=0.0), prompt=subfunc_detail_prompt)
+            func_detail = subfunc_detail_chain.run({"name": k, "code": v})
+            subfunc_details[k] = func_detail
+            logger.debug("function name: {0} \n function details: \n {1}".format(k, func_detail))
+
+            embedding = self.embedding_model.embed_query(func_detail)
+            subfunc_embs[k] = embedding
+            logger.debug("function name: {0} \n function embeddings: \n {1}".format(k, len(embedding)))
+            logger.debug("*******************")
+
+        return subfunc_details, subfunc_embs
+
+    def calcu_similarity(self, file_dict):
+        """
+        Input:  calculate function embedding similarities of C files
+        """
+        sims_files = {}
+        for i, (ki, vi) in enumerate(file_dict.items()):
+            for j, (kj, vj) in enumerate(file_dict.items()):
+                if i > j:
+                    sims, _ = self.calcu_similarity2(vi, vj)
+                    sims_files[ki + "_" + kj] = sims
+
+        logger.debug(sims_files)
+
+    def calcu_similarity2(self, emb_dict1, emb_dict2):
+        """
+        Input: calculate N/M function embedding similarities
+        """
+        sims = np.ones((len(emb_dict1.keys()), len(emb_dict2.keys())))
+        sim_func_names = [i + "_" + j for i in list(emb_dict1.keys()) for j in list(emb_dict2.keys())]
+        for i, (ki, vi) in enumerate(emb_dict1.items()):
+            for j, (kj, vj) in enumerate(emb_dict2.items()):
+                if i >= j:
+                    sims[i][j] = np.dot(vi, vj) / (np.linalg.norm(vi) * np.linalg.norm(vj))
+        logger.debug(sims, sim_func_names)
+        return sims, sim_func_names
