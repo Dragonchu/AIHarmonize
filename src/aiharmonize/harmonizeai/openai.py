@@ -7,6 +7,7 @@ import os
 
 import numpy as np
 from langchain import OpenAI, PromptTemplate, LLMChain
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
 
@@ -58,6 +59,13 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         self.setup_fp_bot()
         self.setup_plan_bot()
         self.setup_merge_bot()
+
+        self.arch_prompt = PromptTemplate(
+            input_variables=["program"],
+            template="From now your are a programmer. What are the innermost subclasses in {program}?\n"
+        )
+        self.arch_chain = LLMChain(llm=self.llm, prompt=self.arch_prompt)
+        self.embedding_model = OpenAIEmbeddings()
 
     def setup(self):
         """将LLM塑造为指定的角色"""
