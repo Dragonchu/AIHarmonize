@@ -41,24 +41,38 @@ class Manage:
         print("Welcome to HarmonizeAI!")
         demo = gr.Blocks()
         with demo:
-            # 上传文件
-            file = gr.File(file_count="multiple", file_types=["text", ".json", ".py"])
-            # 显示功能点的按钮
-            find_func_btn = gr.Button("Find Functions")
-            # 显示功能点并交给用户修改
-            functions_text = gr.Textbox()
-            # 执行计划的按钮
-            gen_plan_btn = gr.Button("Generate Plan")
-            # 显示架构师AI的执行计划
-            plan_text = gr.Textbox()
-            # 生成合并后文件的按钮
-            gen_file_btn = gr.Button("Generate File")
-            # 显示合并后的文件
-            merged_file = gr.Textbox()
-            # 测试用例
-            gr.Examples(examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),
-                                    os.path.join(os.path.dirname(__file__), "examples/FileOutputCalculator.py")]]]
-                        , inputs=file)
+            with gr.Row():
+                with gr.Column():
+                    # 上传文件
+                    file = gr.File(file_count="multiple", file_types=["text", ".json", ".py"])
+                    # 测试用例
+                    gr.Examples(examples=[[[os.path.join(os.path.dirname(__file__), "examples/CachedCalculator.py"),
+                                            os.path.join(os.path.dirname(__file__), "examples/FileOutputCalculator.py")]]]
+                                , inputs=file)
+            with gr.Row():
+                with gr.Column():
+                    # 显示功能点的按钮
+                    find_func_btn = gr.Button("Find Functions")
+                    # 显示功能点并交给用户修改
+                    functions_text = gr.Textbox()
+                with gr.Column():
+                    # 计算相似度的按钮
+                    calcu_sim_btn = gr.Button("Calculate Similarity")
+                    # 显示相似度
+                    sim_text = gr.Textbox()
+            with gr.Row():
+                with gr.Column():
+                    # 执行计划的按钮
+                    gen_plan_btn = gr.Button("Generate Plan")
+                    # 显示架构师AI的执行计划
+                    plan_text = gr.Textbox()
+            with gr.Row():
+                with gr.Column():
+                    # 生成合并后文件的按钮
+                    gen_file_btn = gr.Button("Generate File")
+                    # 显示合并后的文件
+                    merged_file = gr.Textbox()
+
             # 交互
             find_func_btn.click(self.gen_fp, inputs=file, outputs=functions_text)
             gen_plan_btn.click(self.gen_plan, inputs=[file, functions_text], outputs=plan_text)
