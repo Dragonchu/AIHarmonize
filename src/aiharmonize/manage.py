@@ -117,7 +117,6 @@ class Manage:
                 details[file.name], embs[file.name] = data[0], data[1]
                 res += self.harmonizeai.calcu_similarity(embs)
         return res
-    def get_subfunc(self,filename, graph):
 
 def split_json_string(json_string):
     # 查找两个JSON文件的分隔位置
