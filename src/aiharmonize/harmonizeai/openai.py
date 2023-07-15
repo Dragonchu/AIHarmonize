@@ -60,6 +60,7 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         self.setup_plan_bot()
         self.setup_merge_bot()
 
+        self.llm = OpenAI(temperature=0.0)
         self.arch_prompt = PromptTemplate(
             input_variables=["program"],
             template="From now your are a programmer. What are the innermost subclasses in {program}?\n"
