@@ -163,7 +163,7 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
 
         for k, v in subfunc_points.items():
             logger.debug("*******************")
-            logger.debug(k, v)
+            logger.debug("k: {0}, v: {1}".format(k, v))
             subfunc_detail_prompt = PromptTemplate(
                 input_variables=["name", "code"],
                 template="From now your are a programmer. The code in function {name} is \"{code}\". Please generally describe this function in detail.\n"
