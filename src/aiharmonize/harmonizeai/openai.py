@@ -185,12 +185,14 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         Input:  calculate function embedding similarities of C files
         """
         sims_files = {}
+        sims_func_names = {}
         for i, (ki, vi) in enumerate(file_dict.items()):
             for j, (kj, vj) in enumerate(file_dict.items()):
                 if i > j:
-                    sims, _ = self.calcu_similarity2(vi, vj)
+                    sims, sim_func_names = self.calcu_similarity2(vi, vj)
                     sims_files[ki + "_" + kj] = sims
-        return sims_files
+                    sims_func_names[ki + "_" + kj] = sim_func_names
+        return str(sims_files)+ "\n" + str(sims_func_names)
 
     def calcu_similarity2(self, emb_dict1, emb_dict2):
         """

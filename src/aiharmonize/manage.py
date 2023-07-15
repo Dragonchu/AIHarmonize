@@ -116,7 +116,7 @@ class Manage:
                 func_graphs[file.name] = graph
                 data = self.harmonizeai.get_subfunc(fo)
                 details[file.name], embs[file.name] = data[0], data[1]
-                res += str(self.harmonizeai.calcu_similarity(embs))
+                res += self.harmonizeai.calcu_similarity(embs)
         return res
 
 def split_json_string(json_string):
