@@ -8,6 +8,7 @@ class FunctionPoint(BaseModel):
     return_value: str = Field(description="Describes the return value of the function.")
     function_name: str = Field(description="Displays the name of the function.")
     function_class: str = Field(description="Displays the class of the function.")
+    retain: bool = Field(description="Whether to retain the function.",default=True)
 
 
 class FunctionPoints(BaseModel):

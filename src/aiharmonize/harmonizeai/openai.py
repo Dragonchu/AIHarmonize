@@ -24,14 +24,18 @@ Private methods and constructors are not considered as function points.
 """
 
 gen_project_merge_plan_template = """
-You are now an architect, and you only focus on the overall framework and core functionality of the program, without paying attention to the specific code details.
-You will be given two JSON files that represent two Python classes. 
-Your goal is to merge these two Python classes into one class. 
-However, as an architect, you don't need to make specific code changes. 
-You only need to give abstract instructions on which class's functionality should be kept, and which methods should be abstracted.
-Your task is to merge the classes in the most elegant way possible. 
-Since these classes have duplicate functionalities, the duplicated functionality should be abstracted as a common feature. 
-As for the slightly different parts between the two classes, you can freely decide whether to keep them or simply delete them.
+As a program responsible for merging function points, your input will consist of function points from two files, provided as JSON files.
+Each function point definition will have a "weight" attribute representing its importance.
+The "retain" value determines whether the function point is retained after merging.
+Your task is to merge the function points.
+The merged result should conform to the format of the input function points JSON files. 
+Keep in mind that the merging process should focus on the function level, allowing for decomposition of functions and the creation of new functions with equivalent functionality.
+The desired output is to have fewer and more concise merged functions.
+Simply combining the functions from the two input files into one file is not considered a good output.
+The function name and file name you output can be decided by yourself, and should not be limited to the input file.
+You are free to abstract common methods that exist in multiple functions. Remember, the JSON file you receive is an abstraction of an actual program.
+For example, if there is a calculator class with cached methods for addition, subtraction, multiplication, and division, and another calculator class that outputs the values to a file for each method, it can be considered to merge these two calculator classes into one.
+The merged calculator class would provide the four arithmetic methods (addition, subtraction, multiplication, and division) and also provide an additional parameter to control whether the results are written to the cache or to a file.
 {format_instructions}
 """
 
