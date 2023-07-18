@@ -18,3 +18,8 @@ class FunctionPoints(BaseModel):
 class MergePlan(BaseModel):
     """Merge Plan Model"""
     merge_plan: list[str] = Field(description="The steps of merge two class into one class.")
+    
+class TestPlan(BaseModel):
+    """Test Plan Model"""
+    test_file: str = Field(description="The file that you generate for test.")
+    shell_command: str = Field(description="The shell command that you can use to test your code.")

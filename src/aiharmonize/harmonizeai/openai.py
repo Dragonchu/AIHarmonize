@@ -4,6 +4,7 @@
 
 import logging
 import os
+import subprocess
 
 import numpy as np
 from langchain import OpenAI, PromptTemplate, LLMChain
@@ -12,7 +13,7 @@ from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
 
 from aiharmonize.harmonizeai.base import BaseHarmonizeAI
-from aiharmonize.harmonizeai.communication_element import FunctionPoints, MergePlan
+from aiharmonize.harmonizeai.communication_element import FunctionPoints, MergePlan, TestPlan
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,13 @@ The first class: {class1}\n
 The second class: {class2}\n
 """
 
+test_plan_template = """
+You are a test developer.
+Next, you will be provided with all the files in a folder.
+Please use Python to write a test class that tests the specified Python file, and generate a shell command that will use the test file you created.
+{format_instructions}
+"""
+
 # pylint: disable=too-few-public-methods
 
 
@@ -63,6 +71,7 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
         self.setup_fp_bot()
         self.setup_plan_bot()
         self.setup_merge_bot()
+        self.setup_test_bot()
 
         self.llm = OpenAI(temperature=0.0)
         self.arch_prompt = PromptTemplate(
@@ -106,6 +115,21 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
     def setup_merge_bot(self):
         self.merge_bot_prompt = PromptTemplate.from_template(merge_class_template)
 
+    def setup_test_bot(self):
+        test_plan_parser = PydanticOutputParser(pydantic_object=TestPlan)
+        test_plan_system_message_prompt = SystemMessagePromptTemplate(
+            prompt=PromptTemplate(
+                template=test_plan_template,
+                input_variables=[],
+                partial_variables={"format_instructions": test_plan_parser.get_format_instructions()},
+            )
+        )
+        test_plan_input_template = """This is first file: {file1}. \n This is second file: {file2}. \n This is third file: {file3}.
+        You should write a test class that tests the third file, and generate a shell command that will use the test file you created.
+        """
+        test_plan_input_prompt = HumanMessagePromptTemplate.from_template(test_plan_input_template)
+        self.test_plan_bot_prompt = ChatPromptTemplate.from_messages([test_plan_system_message_prompt, test_plan_input_prompt])
+
     def transform(self, role, communication_element):
         """运行LLM"""
         if role == "fp_bot":
@@ -124,8 +148,16 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
                                                          class2=communication_element["file1"])
             merge_bot = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0, verbose=True)
             output = merge_bot(_input.to_string())
+            merged_file_path = os.path.join("/tmp/merged_file.py")
+            with open(merged_file_path, "w", encoding="utf-8") as f:
+                f.write(output)
             return output
-
+        elif role == "test_bot":
+            _input = self.test_plan_bot_prompt.format_prompt(file1=communication_element["file0"], file2=communication_element["file1"], file3=communication_element["test_file"])
+            test_bot = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0, verbose=True)
+            output = test_bot(_input.to_string())
+            return output
+    
     def get_subfunc(self, file):
         subfunc_name_strs = ['CachedCalculator__CachedCalculator____init__', 'CachedCalculator__CachedCalculator__add',
                              'CachedCalculator__CachedCalculator__divide',

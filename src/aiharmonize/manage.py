@@ -73,12 +73,19 @@ class Manage:
                     gen_file_btn = gr.Button("Generate File")
                     # 显示合并后的文件
                     merged_file = gr.Textbox()
+            with gr.Row():
+                with gr.Column():
+                    # 生成测试用例的按钮
+                    gen_test_btn = gr.Button("Generate Test")
+                    # 显示测试用例
+                    test_text = gr.Textbox()
 
             # 交互
             find_func_btn.click(self.gen_fp, inputs=file, outputs=functions_text)
             calcu_sim_btn.click(self.calcu_sim, inputs=[file], outputs=sim_text)
             gen_plan_btn.click(self.gen_plan, inputs=[file, functions_text], outputs=plan_text)
             gen_file_btn.click(self.gen_file, inputs=[file, plan_text], outputs=merged_file)
+            gen_test_btn.click(self.gen_test, inputs=[file], outputs=test_text)
         demo.queue().launch(debug=True)
 
     def gen_fp(self, files):
@@ -104,6 +111,16 @@ class Manage:
             with open(temp_file.name, encoding=DEFAULT_ENCODING) as fo:
                 communication_element["file" + str(idx)] = fo.read()
         return self.harmonizeai.transform("merge_bot", communication_element)
+
+    def gen_test(self, files):
+        """生成测试用例"""
+        communication_element = {}
+        with open("/tmp/merged_file.py", encoding=DEFAULT_ENCODING) as fo:
+            communication_element["test_file"] = fo.read()
+        for idx, temp_file in enumerate(files):
+            with open(temp_file.name, encoding=DEFAULT_ENCODING) as fo:
+                communication_element["file" + str(idx)] = fo.read()
+        return self.harmonizeai.transform("test_bot", communication_element)
 
     def calcu_sim(self, files):
         """计算相似度"""
