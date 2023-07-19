@@ -115,7 +115,7 @@ class Manage:
     def gen_test(self, files):
         """生成测试用例"""
         communication_element = {}
-        with open("/tmp/merged_file.py", encoding=DEFAULT_ENCODING) as fo:
+        with open("/tmp/MergedCalculator.py", encoding=DEFAULT_ENCODING) as fo:
             communication_element["test_file"] = fo.read()
         for idx, temp_file in enumerate(files):
             with open(temp_file.name, encoding=DEFAULT_ENCODING) as fo:

@@ -44,6 +44,10 @@ merge_class_template = """
 You are a program that merges two python classes into one, your output should only contain the merged python class, 
 no other output is required. Your merge needs to comply with certain requirements, this is your merge requirement: {requirements}, 
 these are the two classes you need to merge.
+All files will be placed in the same folder, and each class will be in a separate file.
+The file name will be the class name followed by the .py extension.
+For example, the CachedCalculator class should be in the CachedCalculator.py file.
+Please make sure to correctly reference the module in the output file.
 The first class: {class1}\n
 The second class: {class2}\n
 """
@@ -52,6 +56,11 @@ test_plan_template = """
 You are a test developer.
 Next, you will be provided with all the files in a folder.
 Please use Python to write a test class that tests the specified Python file, and generate a shell command that will use the test file you created.
+You should write a test class that tests the third file, and generate a shell command that will use the test file you created.
+All files will be placed in the same folder, and each class will be in a separate file.
+The file name will be the class name followed by the .py extension.
+For example, the CachedCalculator class should be in the CachedCalculator.py file.
+Please make sure to correctly reference the module in the output file.
 {format_instructions}
 """
 
@@ -125,7 +134,6 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
             )
         )
         test_plan_input_template = """This is first file: {file1}. \n This is second file: {file2}. \n This is third file: {file3}.
-        You should write a test class that tests the third file, and generate a shell command that will use the test file you created.
         """
         test_plan_input_prompt = HumanMessagePromptTemplate.from_template(test_plan_input_template)
         self.test_plan_bot_prompt = ChatPromptTemplate.from_messages([test_plan_system_message_prompt, test_plan_input_prompt])
@@ -148,7 +156,7 @@ class Gpt3HarmonizeAI(BaseHarmonizeAI):
                                                          class2=communication_element["file1"])
             merge_bot = OpenAI(model_name="gpt-3.5-turbo", temperature=0.0, verbose=True)
             output = merge_bot(_input.to_string())
-            merged_file_path = os.path.join("/tmp/merged_file.py")
+            merged_file_path = os.path.join("/tmp/MergedCalculator.py")
             with open(merged_file_path, "w", encoding="utf-8") as f:
                 f.write(output)
             return output
